@@ -18,21 +18,23 @@ FORBIDDEN_PATTERNS=(
 ERRORS=0
 
 # Check package.json dependencies
+PROJECT_ROOT="${PROJECT_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
+
 for pattern in "${FORBIDDEN_PATTERNS[@]}"; do
-  if grep -q "$pattern" /home/z/my-project/danielou/package.json 2>/dev/null; then
+  if grep -q "$pattern" "$PROJECT_ROOT/package.json" 2>/dev/null; then
     echo "BLOCKED: Found '$pattern' in package.json"
     ERRORS=$((ERRORS + 1))
   fi
 done
 
 # Check source files for SQLite imports
-if find /home/z/my-project/danielou/src -name '*.ts' -o -name '*.tsx' | xargs grep -l -E 'sqlite|libsql|better-sqlite' 2>/dev/null; then
+if find "$PROJECT_ROOT/src" -name '*.ts' -o -name '*.tsx' | xargs grep -l -E 'sqlite|libsql|better-sqlite' 2>/dev/null; then
   echo "BLOCKED: SQLite references found in source files"
   ERRORS=$((ERRORS + 1))
 fi
 
 # Check for .db / .sqlite files
-if find /home/z/my-project/danielou -name '*.db' -o -name '*.sqlite' -o -name '*.sqlite3' 2>/dev/null | grep -q .; then
+if find "$PROJECT_ROOT" -name '*.db' -o -name '*.sqlite' -o -name '*.sqlite3' 2>/dev/null | grep -q .; then
   echo "BLOCKED: SQLite database files found"
   ERRORS=$((ERRORS + 1))
 fi
