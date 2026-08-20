@@ -3,7 +3,7 @@
 import { useState, useActionState } from 'react';
 import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { loginAction, type LoginResult } from './actions';
+import { loginAction } from './actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

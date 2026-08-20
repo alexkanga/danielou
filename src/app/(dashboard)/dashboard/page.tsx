@@ -1,7 +1,7 @@
 import { Users, School, FileText, AlertCircle } from 'lucide-react';
 import { db } from '@/lib/db';
 import { student, classroom, assessment, grade } from '@/lib/db/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { getSession } from '@/lib/session';
 import { Card, CardContent } from '@/components/ui/card';
 
