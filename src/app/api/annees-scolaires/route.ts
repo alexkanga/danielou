@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq, like, sql, desc, and } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { academicYear, academicPeriod, school } from '@/lib/db/schema';
+import { academicYear, academicPeriod } from '@/lib/db/schema';
 import { requireSession } from '@/lib/session';
 import { createAcademicYearSchema } from '@/lib/validations/scolarite';
 import { parsePagination, computePagination } from '@/lib/data-access/pagination';
+import { getSchoolId, handleApiError } from '@/lib/data-access/get-school';
 import type { PaginatedResult } from '@/lib/data-access/pagination';
 import type { AcademicYear } from '@/lib/db/schema';
 
@@ -14,29 +15,20 @@ type AcademicYearListResult = PaginatedResult<AcademicYear>;
 export async function GET(request: NextRequest) {
   try {
     await requireSession();
-
-    // Get the first (and only) school's ID
-    const [firstSchool] = await db.select({ id: school.id }).from(school).limit(1);
-    if (!firstSchool) {
-      return NextResponse.json({ error: 'Aucune école configurée.' }, { status: 500 });
-    }
-    const schoolId = firstSchool.id;
+    const schoolId = await getSchoolId();
 
     const { page, limit, search } = parsePagination(request.nextUrl.searchParams);
 
-    // Build the WHERE conditions
     const whereClause = and(
       eq(academicYear.schoolId, schoolId),
       search ? like(academicYear.name, `%${search}%`) : undefined,
     );
 
-    // Count total items
     const [{ count }] = await db
       .select({ count: sql<number>`count(*)::int` })
       .from(academicYear)
       .where(whereClause);
 
-    // Fetch paginated results ordered by startDate DESC
     const data = await db
       .select()
       .from(academicYear)
@@ -52,11 +44,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    if (error instanceof Error && error.message === 'UNAUTHORIZED') {
-      return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
-    }
-    console.error('[GET /api/annees-scolaires]', error);
-    return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
+    return handleApiError(error, 'GET /api/annees-scolaires') as NextResponse;
   }
 }
 
@@ -64,13 +52,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     await requireSession();
-
-    // Get the first (and only) school's ID
-    const [firstSchool] = await db.select({ id: school.id }).from(school).limit(1);
-    if (!firstSchool) {
-      return NextResponse.json({ error: 'Aucune école configurée.' }, { status: 500 });
-    }
-    const schoolId = firstSchool.id;
+    const schoolId = await getSchoolId();
 
     const body = await request.json();
     const parsed = createAcademicYearSchema.safeParse(body);
@@ -113,10 +95,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(created, { status: 201 });
   } catch (error) {
-    if (error instanceof Error && error.message === 'UNAUTHORIZED') {
-      return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
-    }
-    console.error('[POST /api/annees-scolaires]', error);
-    return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
+    return handleApiError(error, 'POST /api/annees-scolaires') as NextResponse;
   }
 }

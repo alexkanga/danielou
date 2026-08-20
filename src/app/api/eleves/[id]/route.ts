@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { student, enrollment, classroom, level } from '@/lib/db/schema';
 import { requireSession } from '@/lib/session';
 import { updateStudentSchema } from '@/lib/validations/scolarite';
+import { handleApiError } from '@/lib/data-access/get-school';
 import type { Student } from '@/lib/db/schema';
 
 type StudentWithEnrollment = Student & {
@@ -67,11 +68,7 @@ export async function GET(
 
     return NextResponse.json(result);
   } catch (error) {
-    if (error instanceof Error && error.message === 'UNAUTHORIZED') {
-      return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
-    }
-    console.error('[GET /api/eleves/[id]]', error);
-    return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
+    return handleApiError(error, 'GET /api/eleves/[id]') as NextResponse;
   }
 }
 
@@ -112,11 +109,7 @@ export async function PUT(
 
     return NextResponse.json(updated);
   } catch (error) {
-    if (error instanceof Error && error.message === 'UNAUTHORIZED') {
-      return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
-    }
-    console.error('[PUT /api/eleves/[id]]', error);
-    return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
+    return handleApiError(error, 'PUT /api/eleves/[id]') as NextResponse;
   }
 }
 
@@ -138,10 +131,6 @@ export async function DELETE(
     await db.delete(student).where(eq(student.id, id));
     return new NextResponse(null, { status: 204 });
   } catch (error) {
-    if (error instanceof Error && error.message === 'UNAUTHORIZED') {
-      return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
-    }
-    console.error('[DELETE /api/eleves/[id]]', error);
-    return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
+    return handleApiError(error, 'DELETE /api/eleves/[id]') as NextResponse;
   }
 }

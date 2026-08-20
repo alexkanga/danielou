@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq, like, sql, and, asc, or } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { student, school, enrollment, classroom, level } from '@/lib/db/schema';
+import { student, enrollment, classroom, level } from '@/lib/db/schema';
 import { requireSession } from '@/lib/session';
 import { createStudentSchema } from '@/lib/validations/scolarite';
 import { parsePagination, computePagination } from '@/lib/data-access/pagination';
+import { getSchoolId, handleApiError } from '@/lib/data-access/get-school';
 import type { PaginatedResult } from '@/lib/data-access/pagination';
 import type { Student } from '@/lib/db/schema';
 
@@ -18,12 +19,7 @@ type StudentResult = PaginatedResult<StudentWithEnrollment>;
 export async function GET(request: NextRequest) {
   try {
     await requireSession();
-
-    const [firstSchool] = await db.select({ id: school.id }).from(school).limit(1);
-    if (!firstSchool) {
-      return NextResponse.json({ error: 'Aucune école configurée.' }, { status: 500 });
-    }
-    const schoolId = firstSchool.id;
+    const schoolId = await getSchoolId();
 
     const { page, limit, search } = parsePagination(request.nextUrl.searchParams);
 
@@ -39,13 +35,11 @@ export async function GET(request: NextRequest) {
     ];
     const whereClause = and(...conditions);
 
-    // Count
     const [{ count }] = await db
       .select({ count: sql<number>`count(*)::int` })
       .from(student)
       .where(whereClause);
 
-    // Query with enrollment info
     const rows = await db
       .select({
         id: student.id,
@@ -97,11 +91,7 @@ export async function GET(request: NextRequest) {
     const result: StudentResult = { data, pagination: computePagination(count, page, limit) };
     return NextResponse.json(result);
   } catch (error) {
-    if (error instanceof Error && error.message === 'UNAUTHORIZED') {
-      return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
-    }
-    console.error('[GET /api/eleves]', error);
-    return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
+    return handleApiError(error, 'GET /api/eleves') as NextResponse;
   }
 }
 
@@ -109,12 +99,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     await requireSession();
-
-    const [firstSchool] = await db.select({ id: school.id }).from(school).limit(1);
-    if (!firstSchool) {
-      return NextResponse.json({ error: 'Aucune école configurée.' }, { status: 500 });
-    }
-    const schoolId = firstSchool.id;
+    const schoolId = await getSchoolId();
 
     const body = await request.json();
     const parsed = createStudentSchema.safeParse(body);
@@ -168,10 +153,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(created, { status: 201 });
   } catch (error) {
-    if (error instanceof Error && error.message === 'UNAUTHORIZED') {
-      return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
-    }
-    console.error('[POST /api/eleves]', error);
-    return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
+    return handleApiError(error, 'POST /api/eleves') as NextResponse;
   }
 }

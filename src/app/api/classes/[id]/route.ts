@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { classroom, level, academicYear, enrollment, assessment } from '@/lib/db/schema';
 import { requireSession } from '@/lib/session';
 import { updateClassroomSchema } from '@/lib/validations/scolarite';
+import { handleApiError } from '@/lib/data-access/get-school';
 
 type ClassroomDetail = {
   id: string;
@@ -24,7 +25,6 @@ export async function GET(
 ) {
   try {
     await requireSession();
-
     const { id } = await params;
 
     const rows = await db
@@ -57,11 +57,7 @@ export async function GET(
     const result: ClassroomDetail = rows[0] as ClassroomDetail;
     return NextResponse.json(result);
   } catch (error) {
-    if (error instanceof Error && error.message === 'UNAUTHORIZED') {
-      return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
-    }
-    console.error('[GET /api/classes/[id]]', error);
-    return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
+    return handleApiError(error, 'GET /api/classes/[id]') as NextResponse;
   }
 }
 
@@ -72,10 +68,8 @@ export async function PUT(
 ) {
   try {
     await requireSession();
-
     const { id } = await params;
 
-    // Verify the classroom exists
     const [existing] = await db
       .select()
       .from(classroom)
@@ -97,7 +91,6 @@ export async function PUT(
 
     const updates: Record<string, unknown> = { ...parsed.data };
 
-    // If name is being changed, check uniqueness within same (levelId, academicYearId)
     if (parsed.data.name && parsed.data.name !== existing.name) {
       const [duplicate] = await db
         .select({ id: classroom.id })
@@ -127,11 +120,7 @@ export async function PUT(
 
     return NextResponse.json(updated);
   } catch (error) {
-    if (error instanceof Error && error.message === 'UNAUTHORIZED') {
-      return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
-    }
-    console.error('[PUT /api/classes/[id]]', error);
-    return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
+    return handleApiError(error, 'PUT /api/classes/[id]') as NextResponse;
   }
 }
 
@@ -142,10 +131,8 @@ export async function DELETE(
 ) {
   try {
     await requireSession();
-
     const { id } = await params;
 
-    // Verify the classroom exists
     const [existing] = await db
       .select()
       .from(classroom)
@@ -155,7 +142,6 @@ export async function DELETE(
       return NextResponse.json({ error: 'Classe introuvable.' }, { status: 404 });
     }
 
-    // Check if any active enrollments reference this classroom
     const [activeEnrollment] = await db
       .select({ id: enrollment.id })
       .from(enrollment)
@@ -174,7 +160,6 @@ export async function DELETE(
       );
     }
 
-    // Check if any assessments reference this classroom
     const [linkedAssessment] = await db
       .select({ id: assessment.id })
       .from(assessment)
@@ -192,10 +177,6 @@ export async function DELETE(
 
     return new NextResponse(null, { status: 204 });
   } catch (error) {
-    if (error instanceof Error && error.message === 'UNAUTHORIZED') {
-      return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
-    }
-    console.error('[DELETE /api/classes/[id]]', error);
-    return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
+    return handleApiError(error, 'DELETE /api/classes/[id]') as NextResponse;
   }
 }

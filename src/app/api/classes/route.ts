@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq, like, sql, asc, and, or } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { classroom, level, academicYear, school } from '@/lib/db/schema';
+import { classroom, level, academicYear } from '@/lib/db/schema';
 import { requireSession } from '@/lib/session';
 import { createClassroomSchema } from '@/lib/validations/scolarite';
 import { parsePagination, computePagination } from '@/lib/data-access/pagination';
+import { getSchoolId, handleApiError } from '@/lib/data-access/get-school';
 import type { PaginatedResult } from '@/lib/data-access/pagination';
 import type { Classroom } from '@/lib/db/schema';
 
@@ -20,17 +21,10 @@ type ClassroomListResult = PaginatedResult<ClassroomListItem>;
 export async function GET(request: NextRequest) {
   try {
     await requireSession();
-
-    // Get the first (and only) school's ID
-    const [firstSchool] = await db.select({ id: school.id }).from(school).limit(1);
-    if (!firstSchool) {
-      return NextResponse.json({ error: 'Aucune école configurée.' }, { status: 500 });
-    }
-    const schoolId = firstSchool.id;
+    const schoolId = await getSchoolId();
 
     const { page, limit, search } = parsePagination(request.nextUrl.searchParams);
 
-    // Build the WHERE conditions — filter by school via level, plus optional search
     const searchCondition = search
       ? or(
           like(classroom.name, `%${search}%`),
@@ -43,7 +37,6 @@ export async function GET(request: NextRequest) {
       searchCondition,
     );
 
-    // Count total items (join needed for search on level.name and school filter)
     const [{ count }] = await db
       .select({ count: sql<number>`count(*)::int` })
       .from(classroom)
@@ -51,7 +44,6 @@ export async function GET(request: NextRequest) {
       .innerJoin(academicYear, eq(classroom.academicYearId, academicYear.id))
       .where(whereClause);
 
-    // Fetch paginated results with joins and studentCount subquery
     const data = await db
       .select({
         id: classroom.id,
@@ -84,11 +76,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    if (error instanceof Error && error.message === 'UNAUTHORIZED') {
-      return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
-    }
-    console.error('[GET /api/classes]', error);
-    return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
+    return handleApiError(error, 'GET /api/classes') as NextResponse;
   }
 }
 
@@ -109,7 +97,6 @@ export async function POST(request: NextRequest) {
 
     const { name, levelId, academicYearId } = parsed.data;
 
-    // Check uniqueness: same (levelId, academicYearId, name)
     const [duplicate] = await db
       .select({ id: classroom.id })
       .from(classroom)
@@ -136,10 +123,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(created, { status: 201 });
   } catch (error) {
-    if (error instanceof Error && error.message === 'UNAUTHORIZED') {
-      return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
-    }
-    console.error('[POST /api/classes]', error);
-    return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
+    return handleApiError(error, 'POST /api/classes') as NextResponse;
   }
 }

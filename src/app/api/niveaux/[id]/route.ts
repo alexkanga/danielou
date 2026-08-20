@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { level, classroom } from '@/lib/db/schema';
 import { requireSession } from '@/lib/session';
 import { updateLevelSchema } from '@/lib/validations/scolarite';
+import { handleApiError } from '@/lib/data-access/get-school';
 
 // GET /api/niveaux/[id] — Get a single niveau
 export async function GET(
@@ -12,7 +13,6 @@ export async function GET(
 ) {
   try {
     await requireSession();
-
     const { id } = await params;
 
     const [found] = await db.select().from(level).where(eq(level.id, id)).limit(1);
@@ -22,11 +22,7 @@ export async function GET(
 
     return NextResponse.json(found);
   } catch (error) {
-    if (error instanceof Error && error.message === 'UNAUTHORIZED') {
-      return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
-    }
-    console.error('[GET /api/niveaux/[id]]', error);
-    return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
+    return handleApiError(error, 'GET /api/niveaux/[id]') as NextResponse;
   }
 }
 
@@ -37,10 +33,8 @@ export async function PUT(
 ) {
   try {
     await requireSession();
-
     const { id } = await params;
 
-    // Verify the niveau exists
     const [existing] = await db.select().from(level).where(eq(level.id, id)).limit(1);
     if (!existing) {
       return NextResponse.json({ error: 'Niveau introuvable.' }, { status: 404 });
@@ -58,7 +52,6 @@ export async function PUT(
 
     const updates: Record<string, unknown> = { ...parsed.data };
 
-    // If name is being changed, check uniqueness within the same school
     if (parsed.data.name && parsed.data.name !== existing.name) {
       const [duplicate] = await db
         .select()
@@ -87,11 +80,7 @@ export async function PUT(
 
     return NextResponse.json(updated);
   } catch (error) {
-    if (error instanceof Error && error.message === 'UNAUTHORIZED') {
-      return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
-    }
-    console.error('[PUT /api/niveaux/[id]]', error);
-    return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
+    return handleApiError(error, 'PUT /api/niveaux/[id]') as NextResponse;
   }
 }
 
@@ -102,16 +91,13 @@ export async function DELETE(
 ) {
   try {
     await requireSession();
-
     const { id } = await params;
 
-    // Verify the niveau exists
     const [existing] = await db.select().from(level).where(eq(level.id, id)).limit(1);
     if (!existing) {
       return NextResponse.json({ error: 'Niveau introuvable.' }, { status: 404 });
     }
 
-    // Check if any classrooms reference this level
     const linkedClassrooms = await db
       .select({ id: classroom.id })
       .from(classroom)
@@ -129,10 +115,6 @@ export async function DELETE(
 
     return new NextResponse(null, { status: 204 });
   } catch (error) {
-    if (error instanceof Error && error.message === 'UNAUTHORIZED') {
-      return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
-    }
-    console.error('[DELETE /api/niveaux/[id]]', error);
-    return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
+    return handleApiError(error, 'DELETE /api/niveaux/[id]') as NextResponse;
   }
 }

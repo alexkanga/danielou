@@ -45,7 +45,10 @@ export default function AnneesScolairesPage() {
       const params = new URLSearchParams({ page: String(page), limit: '20' });
       if (searchStr) params.set('search', searchStr);
       const res = await fetch(`/api/annees-scolaires?${params}`);
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Erreur');
+      }
       const json: PaginatedResult<YearWithPeriods> = await res.json();
       setData(json.data.map((y) => ({ ...y, periods: y.periods ?? [] })));
       setPagination(json.pagination);

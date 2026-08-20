@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { academicYear, academicPeriod, classroom, enrollment } from '@/lib/db/schema';
 import { requireSession } from '@/lib/session';
 import { updateAcademicYearSchema } from '@/lib/validations/scolarite';
+import { handleApiError } from '@/lib/data-access/get-school';
 import type { AcademicPeriod } from '@/lib/db/schema';
 
 // GET /api/annees-scolaires/[id] — Get a single academic year with its periods
@@ -13,7 +14,6 @@ export async function GET(
 ) {
   try {
     await requireSession();
-
     const { id } = await params;
 
     const [found] = await db.select().from(academicYear).where(eq(academicYear.id, id)).limit(1);
@@ -21,7 +21,6 @@ export async function GET(
       return NextResponse.json({ error: 'Année scolaire introuvable.' }, { status: 404 });
     }
 
-    // Fetch associated periods
     const periods: AcademicPeriod[] = await db
       .select()
       .from(academicPeriod)
@@ -30,11 +29,7 @@ export async function GET(
 
     return NextResponse.json({ ...found, periods });
   } catch (error) {
-    if (error instanceof Error && error.message === 'UNAUTHORIZED') {
-      return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
-    }
-    console.error('[GET /api/annees-scolaires/[id]]', error);
-    return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
+    return handleApiError(error, 'GET /api/annees-scolaires/[id]') as NextResponse;
   }
 }
 
@@ -45,10 +40,8 @@ export async function PUT(
 ) {
   try {
     await requireSession();
-
     const { id } = await params;
 
-    // Verify the academic year exists
     const [existing] = await db.select().from(academicYear).where(eq(academicYear.id, id)).limit(1);
     if (!existing) {
       return NextResponse.json({ error: 'Année scolaire introuvable.' }, { status: 404 });
@@ -66,7 +59,6 @@ export async function PUT(
 
     const updates: Record<string, unknown> = { ...parsed.data };
 
-    // If status is being set to 'active', close any other active years for the same school
     if (parsed.data.status === 'active') {
       await db
         .update(academicYear)
@@ -87,11 +79,7 @@ export async function PUT(
 
     return NextResponse.json(updated);
   } catch (error) {
-    if (error instanceof Error && error.message === 'UNAUTHORIZED') {
-      return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
-    }
-    console.error('[PUT /api/annees-scolaires/[id]]', error);
-    return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
+    return handleApiError(error, 'PUT /api/annees-scolaires/[id]') as NextResponse;
   }
 }
 
@@ -102,16 +90,13 @@ export async function DELETE(
 ) {
   try {
     await requireSession();
-
     const { id } = await params;
 
-    // Verify the academic year exists
     const [existing] = await db.select().from(academicYear).where(eq(academicYear.id, id)).limit(1);
     if (!existing) {
       return NextResponse.json({ error: 'Année scolaire introuvable.' }, { status: 404 });
     }
 
-    // Check if any classrooms reference this year
     const linkedClassrooms = await db
       .select({ id: classroom.id })
       .from(classroom)
@@ -125,7 +110,6 @@ export async function DELETE(
       );
     }
 
-    // Check if any enrollments reference this year
     const linkedEnrollments = await db
       .select({ id: enrollment.id })
       .from(enrollment)
@@ -143,10 +127,6 @@ export async function DELETE(
 
     return new NextResponse(null, { status: 204 });
   } catch (error) {
-    if (error instanceof Error && error.message === 'UNAUTHORIZED') {
-      return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
-    }
-    console.error('[DELETE /api/annees-scolaires/[id]]', error);
-    return NextResponse.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
+    return handleApiError(error, 'DELETE /api/annees-scolaires/[id]') as NextResponse;
   }
 }

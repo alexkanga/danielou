@@ -63,7 +63,10 @@ export default function ClassesPage() {
       const params = new URLSearchParams({ page: String(page), limit: '20' });
       if (searchStr) params.set('search', searchStr);
       const res = await fetch(`/api/classes?${params}`);
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Erreur');
+      }
       const json: PaginatedResult<ClassroomListItem> = await res.json();
       setData(json.data);
       setPagination(json.pagination);
