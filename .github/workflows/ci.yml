@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-gates:
+    name: Quality Gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check SQLite blocker
+        run: pnpm check:sqlite
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type check
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test:unit
+
+      - name: Build
+        run: pnpm build
+        env:
+          DATABASE_URL: postgresql://placeholder:placeholder@localhost/danielou_ci
+          DIRECT_URL: postgresql://placeholder:placeholder@localhost/danielou_ci
+          AUTH_SECRET: ci-secret-minimum-32-characters-long-enough
+          BETTER_AUTH_SECRET: ci-secret-minimum-32-characters-long-enough
+          BETTER_AUTH_URL: http://localhost:3000

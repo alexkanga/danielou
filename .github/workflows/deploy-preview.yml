@@ -1,0 +1,33 @@
+name: Deploy Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  preview:
+    name: Preview Deployment
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_PREVIEW }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL_PREVIEW }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          BETTER_AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          BETTER_AUTH_URL: ${{ secrets.BETTER_AUTH_URL_PREVIEW }}
