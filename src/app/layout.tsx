@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     "Plateforme de gestion scolaire Daniélou Abidjan : élèves, évaluations, bulletins et analyse.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full font-sans text-text-primary">

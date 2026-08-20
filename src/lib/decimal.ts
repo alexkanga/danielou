@@ -7,7 +7,9 @@ Decimal.set({
 
 export type RoundingStrategy = "HALF_UP" | "HALF_EVEN" | "TRUNCATE";
 
-const ROUNDING_MAP: Record<RoundingStrategy, number> = {
+type Rounding = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+
+const ROUNDING_MAP: Record<RoundingStrategy, Rounding> = {
   HALF_UP: Decimal.ROUND_HALF_UP,
   HALF_EVEN: Decimal.ROUND_HALF_EVEN,
   TRUNCATE: Decimal.ROUND_DOWN,
