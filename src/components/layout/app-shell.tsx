@@ -4,11 +4,20 @@ import { useState, type ReactNode } from 'react';
 import { Sidebar } from './sidebar';
 import { Topbar } from './topbar';
 
-interface AppShellProps {
-  children: ReactNode;
+interface SessionUser {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  isSuperAdmin?: boolean;
 }
 
-export function AppShell({ children }: AppShellProps) {
+interface AppShellProps {
+  children: ReactNode;
+  user: SessionUser;
+}
+
+export function AppShell({ children, user }: AppShellProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -24,7 +33,10 @@ export function AppShell({ children }: AppShellProps) {
 
       {/* Main content area */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Topbar onMenuToggle={() => setMobileOpen(true)} />
+        <Topbar
+          user={user}
+          onMenuToggle={() => setMobileOpen(true)}
+        />
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           {children}
         </main>

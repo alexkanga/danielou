@@ -1,102 +1,67 @@
 'use client';
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-
-const loginSchema = z.object({
-  email: z.email('Adresse e-mail invalide'),
-  password: z.string().min(1, 'Le mot de passe est requis'),
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
+import { useState, useActionState } from 'react';
+import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { loginAction, type LoginResult } from './actions';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [result, formAction, isPending] = useActionState(loginAction, null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
-  });
-
-  async function onSubmit(data: LoginFormData) {
-    setIsSubmitting(true);
-    // Auth will be connected later
-    console.log('Login submitted:', data);
-    // Simulate a network request
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsSubmitting(false);
+  // Rediriger après succès
+  if (result?.success) {
+    const redirect = searchParams.get('redirect') || '/dashboard';
+    router.push(redirect);
+    router.refresh();
+    return null;
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-      {/* Email field */}
-      <div className="space-y-1.5">
-        <label
-          htmlFor="email"
-          className="block text-sm font-medium text-text-primary"
-        >
-          Adresse e-mail
-        </label>
-        <input
-          id="email"
-          type="email"
-          autoComplete="email"
-          placeholder="admin@danielou.ci"
-          {...register('email')}
-          className={cn(
-            'block w-full rounded-radius-md border px-3 py-2.5 text-sm transition-colors',
-            'placeholder:text-text-secondary/60',
-            'focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20',
-            errors.email
-              ? 'border-danger focus:border-danger focus:ring-danger/20'
-              : 'border-border'
-          )}
+    <form action={formAction} className="space-y-5">
+      {/* Erreur globale */}
+      {result && !result.success && (
+        <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>{result.error}</span>
+        </div>
+      )}
+
+      {/* Champ identifiant */}
+      <div className="space-y-2">
+        <Label htmlFor="login">Identifiant ou e-mail</Label>
+        <Input
+          id="login"
+          name="login"
+          type="text"
+          autoComplete="email username"
+          placeholder="admin@danielou.ci ou fantomas"
+          required
         />
-        {errors.email && (
-          <p className="text-sm text-danger">{errors.email.message}</p>
-        )}
       </div>
 
-      {/* Password field */}
-      <div className="space-y-1.5">
-        <label
-          htmlFor="password"
-          className="block text-sm font-medium text-text-primary"
-        >
-          Mot de passe
-        </label>
+      {/* Champ mot de passe */}
+      <div className="space-y-2">
+        <Label htmlFor="password">Mot de passe</Label>
         <div className="relative">
-          <input
+          <Input
             id="password"
+            name="password"
             type={showPassword ? 'text' : 'password'}
             autoComplete="current-password"
             placeholder="••••••••"
-            {...register('password')}
-            className={cn(
-              'block w-full rounded-radius-md border px-3 py-2.5 pr-10 text-sm transition-colors',
-              'placeholder:text-text-secondary/60',
-              'focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20',
-              errors.password
-                ? 'border-danger focus:border-danger focus:ring-danger/20'
-                : 'border-border'
-            )}
+            className="pr-10"
+            required
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-text-secondary transition-colors hover:text-text-primary"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
           >
             {showPassword ? (
@@ -106,24 +71,13 @@ export function LoginForm() {
             )}
           </button>
         </div>
-        {errors.password && (
-          <p className="text-sm text-danger">{errors.password.message}</p>
-        )}
       </div>
 
-      {/* Submit button */}
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className={cn(
-          'flex w-full items-center justify-center gap-2 rounded-radius-md bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white transition-colors',
-          'hover:bg-brand-primary/90 focus:outline-none focus:ring-2 focus:ring-brand-primary/40 focus:ring-offset-2',
-          'disabled:cursor-not-allowed disabled:opacity-70'
-        )}
-      >
-        {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-        {isSubmitting ? 'Connexion…' : 'Se connecter'}
-      </button>
+      {/* Bouton de connexion */}
+      <Button type="submit" className="w-full" disabled={isPending}>
+        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        {isPending ? 'Connexion…' : 'Se connecter'}
+      </Button>
     </form>
   );
 }
