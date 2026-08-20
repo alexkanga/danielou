@@ -41,8 +41,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# drizzle
-drizzle/
+# drizzle meta (generated, keep SQL migrations)
+drizzle/meta/
 
 # SQLite — FORMELLEMENT INTERDIT (ADR-003)
 *.db
