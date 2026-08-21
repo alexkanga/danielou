@@ -4,10 +4,12 @@ CREATE TYPE "public"."config_status" AS ENUM('draft', 'active', 'archived');--> 
 CREATE TYPE "public"."enrollment_status" AS ENUM('active', 'transferred', 'withdrawn');--> statement-breakpoint
 CREATE TYPE "public"."grade_status" AS ENUM('graded', 'absent_excused', 'absent_unexcused', 'exempt', 'not_evaluated', 'pending');--> statement-breakpoint
 CREATE TYPE "public"."period_status" AS ENUM('draft', 'open', 'closed');--> statement-breakpoint
+CREATE TYPE "public"."platform_role" AS ENUM('super_admin', 'none');--> statement-breakpoint
 CREATE TYPE "public"."promotion_decision" AS ENUM('proposed_admitted', 'proposed_repeat', 'decision_required', 'final_admitted', 'final_repeat');--> statement-breakpoint
 CREATE TYPE "public"."report_card_status" AS ENUM('draft', 'ready', 'validated', 'published');--> statement-breakpoint
 CREATE TYPE "public"."app_role" AS ENUM('admin', 'direction', 'teacher', 'reader');--> statement-breakpoint
 CREATE TYPE "public"."rounding_strategy" AS ENUM('half_up', 'half_even', 'truncate');--> statement-breakpoint
+CREATE TYPE "public"."school_membership_role" AS ENUM('admin', 'direction', 'teacher', 'reader');--> statement-breakpoint
 CREATE TABLE "academic_period" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"academic_year_id" uuid NOT NULL,
@@ -69,7 +71,11 @@ CREATE TABLE "assessment_type" (
 --> statement-breakpoint
 CREATE TABLE "audit_log" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"actor_type" text,
+	"actor_identifier" text,
 	"user_id" uuid,
+	"school_id" uuid,
+	"request_id" text,
 	"action" text NOT NULL,
 	"entity" text NOT NULL,
 	"entity_id" uuid NOT NULL,
@@ -164,7 +170,7 @@ CREATE TABLE "pedagogical_config" (
 	"conduct_enabled" boolean DEFAULT false NOT NULL,
 	"conduct_included_in_average" boolean DEFAULT false NOT NULL,
 	"conduct_coefficient" numeric(6, 2) DEFAULT '0',
-	"conduct_scale" integer DEFAULT '20',
+	"conduct_scale" integer DEFAULT 20,
 	"description" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
@@ -214,6 +220,16 @@ CREATE TABLE "school" (
 	"city" text DEFAULT 'Abidjan',
 	"country" text DEFAULT 'Côte d''Ivoire',
 	"logo_url" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "school_membership" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"school_id" uuid NOT NULL,
+	"user_id" uuid NOT NULL,
+	"role" "school_membership_role" DEFAULT 'reader' NOT NULL,
+	"is_active" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -286,11 +302,15 @@ CREATE TABLE "user" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"email" text NOT NULL,
 	"name" text NOT NULL,
+	"username" text,
 	"role" "app_role" DEFAULT 'reader' NOT NULL,
+	"platform_role" "platform_role" DEFAULT 'none' NOT NULL,
+	"is_super_admin" boolean DEFAULT false NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "user_email_unique" UNIQUE("email")
+	CONSTRAINT "user_email_unique" UNIQUE("email"),
+	CONSTRAINT "user_username_unique" UNIQUE("username")
 );
 --> statement-breakpoint
 ALTER TABLE "academic_period" ADD CONSTRAINT "academic_period_academic_year_id_academic_year_id_fk" FOREIGN KEY ("academic_year_id") REFERENCES "public"."academic_year"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -321,6 +341,8 @@ ALTER TABLE "report_card" ADD CONSTRAINT "report_card_enrollment_id_enrollment_i
 ALTER TABLE "report_card" ADD CONSTRAINT "report_card_academic_period_id_academic_period_id_fk" FOREIGN KEY ("academic_period_id") REFERENCES "public"."academic_period"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "report_card_item" ADD CONSTRAINT "report_card_item_report_card_id_report_card_id_fk" FOREIGN KEY ("report_card_id") REFERENCES "public"."report_card"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "report_card_item" ADD CONSTRAINT "report_card_item_subject_id_subject_id_fk" FOREIGN KEY ("subject_id") REFERENCES "public"."subject"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "school_membership" ADD CONSTRAINT "school_membership_school_id_school_id_fk" FOREIGN KEY ("school_id") REFERENCES "public"."school"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "school_membership" ADD CONSTRAINT "school_membership_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "session" ADD CONSTRAINT "session_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "student" ADD CONSTRAINT "student_school_id_school_id_fk" FOREIGN KEY ("school_id") REFERENCES "public"."school"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "subject" ADD CONSTRAINT "subject_school_id_school_id_fk" FOREIGN KEY ("school_id") REFERENCES "public"."school"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -350,6 +372,9 @@ CREATE UNIQUE INDEX "ur_student_period" ON "report_card" USING btree ("student_i
 CREATE INDEX "rc_enrollment_idx" ON "report_card" USING btree ("enrollment_id");--> statement-breakpoint
 CREATE INDEX "rc_status_idx" ON "report_card" USING btree ("status");--> statement-breakpoint
 CREATE UNIQUE INDEX "uri_rc_subject" ON "report_card_item" USING btree ("report_card_id","subject_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "usm_school_user" ON "school_membership" USING btree ("school_id","user_id");--> statement-breakpoint
+CREATE INDEX "sm_user_idx" ON "school_membership" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX "sm_school_idx" ON "school_membership" USING btree ("school_id");--> statement-breakpoint
 CREATE INDEX "st_school_idx" ON "student" USING btree ("school_id");--> statement-breakpoint
 CREATE INDEX "st_name_idx" ON "student" USING btree ("last_name","first_name");--> statement-breakpoint
 CREATE UNIQUE INDEX "us_school_code" ON "subject" USING btree ("school_id","code");--> statement-breakpoint

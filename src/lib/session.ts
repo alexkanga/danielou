@@ -1,27 +1,63 @@
 /**
- * Session unifiée — vérifie Fantomas d'abord, puis Better-Auth.
- * Fonctionne côté serveur uniquement.
+ * Session unifiée V2 — M1 mise à jour
+ * Vérifie Ghost d'abord (via ghost-auth), puis Better-Auth.
+ * Retourne un objet AppSessionV2 compatible avec le dual role system.
  */
 
 import { cookies } from 'next/headers';
-import { verifyFantomasToken, getFantomasCookieName, type SessionUser } from './fantomas';
+import { verifyGhostSession, GHOST_COOKIE_NAME } from './ghost-auth';
+import type { PlatformRole, SchoolRole, SessionUserV2, SchoolMembership, AppSessionV2 } from './types/rbac';
+import { derivePlatformRole, deriveSchoolRole } from './authorization';
 
-export type AppSession =
-  | { user: SessionUser; source: 'fantomas' }
-  | { user: SessionUser; source: 'better-auth' }
-  | null;
+export type AppSession = AppSessionV2;
 
-export async function getSession(): Promise<AppSession> {
+function toV2User(opts: {
+  id: string;
+  email: string;
+  name: string;
+  isGhost: boolean;
+  isSuperAdmin: boolean;
+  v1Role: string;
+  source: 'ghost' | 'better-auth';
+}): SessionUserV2 {
+  const platformRole: PlatformRole = derivePlatformRole({
+    isGhost: opts.isGhost,
+    isSuperAdmin: opts.isSuperAdmin,
+    v1Role: opts.v1Role,
+  });
+
+  return {
+    id: opts.id,
+    email: opts.email,
+    name: opts.name,
+    platformRole,
+    isGhost: opts.isGhost,
+    source: opts.source,
+  };
+}
+
+export async function getSession(): Promise<AppSessionV2 | null> {
   const cookieStore = await cookies();
 
-  // 1. Vérifier le token Fantomas
-  const fantomasToken = cookieStore.get(getFantomasCookieName())?.value;
-  if (fantomasToken) {
-    const fantomasUser = await verifyFantomasToken(fantomasToken);
-    if (fantomasUser) {
+  // 1. Vérifier le token Ghost
+  const ghostToken = cookieStore.get(GHOST_COOKIE_NAME)?.value;
+  if (ghostToken) {
+    const ghostPayload = await verifyGhostSession(ghostToken);
+    if (ghostPayload) {
+      const user = toV2User({
+        id: 'fantomas-ghost',
+        email: 'fantomas',
+        name: 'Fantomas',
+        isGhost: true,
+        isSuperAdmin: true,
+        v1Role: 'admin',
+        source: 'ghost',
+      });
       return {
-        user: fantomasUser,
-        source: 'fantomas',
+        user,
+        schoolMemberships: [],
+        activeSchoolRole: 'admin',
+        activeSchoolId: null,
       };
     }
   }
@@ -36,14 +72,36 @@ export async function getSession(): Promise<AppSession> {
     });
     if (session?.user) {
       const u = session.user as Record<string, unknown>;
-      return {
-        user: {
-          id: String(u.id ?? ''),
-          email: String(u.email ?? ''),
-          name: String(u.name ?? u.email ?? ''),
-          role: String(u.role ?? 'reader'),
-        },
+      const v1Role = String(u.role ?? 'reader');
+      const isSuperAdmin = Boolean(u.isSuperAdmin);
+
+      const user = toV2User({
+        id: String(u.id ?? ''),
+        email: String(u.email ?? ''),
+        name: String(u.name ?? u.email ?? ''),
+        isGhost: false,
+        isSuperAdmin,
+        v1Role,
         source: 'better-auth',
+      });
+
+      const schoolRole = deriveSchoolRole({
+        isGhost: false,
+        isSuperAdmin,
+        v1Role,
+      });
+
+      // TODO(M1): Charger les memberships depuis school_membership table
+      const schoolMemberships: SchoolMembership[] = [];
+      const activeSchoolId = schoolMemberships.length > 0
+        ? schoolMemberships[0].schoolId
+        : null;
+
+      return {
+        user,
+        schoolMemberships,
+        activeSchoolRole: schoolRole,
+        activeSchoolId,
       };
     }
   } catch {
@@ -53,10 +111,11 @@ export async function getSession(): Promise<AppSession> {
   return null;
 }
 
-export async function requireSession(): Promise<NonNullable<AppSession>> {
+export async function requireSession(): Promise<NonNullable<AppSessionV2>> {
   const session = await getSession();
   if (!session) {
-    throw new Error('UNAUTHORIZED');
+    const { AuthorizationError } = await import('./authorization');
+    throw new AuthorizationError('UNAUTHORIZED');
   }
   return session;
 }

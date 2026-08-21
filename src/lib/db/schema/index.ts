@@ -14,6 +14,8 @@ export const calculationPolicyEnum = pgEnum('calculation_policy', ['simple_avera
 export const roundingStrategyEnum = pgEnum('rounding_strategy', ['half_up', 'half_even', 'truncate']);
 export const promotionDecisionEnum = pgEnum('promotion_decision', ['proposed_admitted', 'proposed_repeat', 'decision_required', 'final_admitted', 'final_repeat']);
 export const roleEnum = pgEnum('app_role', ['admin', 'direction', 'teacher', 'reader']);
+export const platformRoleEnum = pgEnum('platform_role', ['super_admin', 'none']);
+export const schoolMembershipRoleEnum = pgEnum('school_membership_role', ['admin', 'direction', 'teacher', 'reader']);
 
 // ==============================================
 // AUDIT TRAIL MIXIN
@@ -350,7 +352,10 @@ export const user = pgTable('user', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: text('email').notNull().unique(),
   name: text('name').notNull(),
+  username: text('username').unique(),
   role: roleEnum('role').notNull().default('reader'),
+  platformRole: platformRoleEnum('platform_role').notNull().default('none'),
+  isSuperAdmin: boolean('is_super_admin').notNull().default(false),
   isActive: boolean('is_active').notNull().default(true),
   ...auditColumns,
 });
@@ -401,7 +406,11 @@ export const teacherAssignment = pgTable('teacher_assignment', {
 
 export const auditLog = pgTable('audit_log', {
   id: uuid('id').primaryKey().defaultRandom(),
+  actorType: text('actor_type'),
+  actorIdentifier: text('actor_identifier'),
   userId: uuid('user_id'),
+  schoolId: uuid('school_id'),
+  requestId: text('request_id'),
   action: text('action').notNull(),
   entity: text('entity').notNull(),
   entityId: uuid('entity_id').notNull(),
@@ -448,3 +457,23 @@ export type User = typeof user.$inferSelect;
 export type NewUser = typeof user.$inferInsert;
 export type AuditLog = typeof auditLog.$inferSelect;
 export type NewAuditLog = typeof auditLog.$inferInsert;
+
+// ==============================================
+// SCHOOL MEMBERSHIP (M1-29.8)
+// ==============================================
+
+export const schoolMembership = pgTable('school_membership', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  schoolId: uuid('school_id').notNull().references(() => school.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  role: schoolMembershipRoleEnum('role').notNull().default('reader'),
+  isActive: boolean('is_active').notNull().default(true),
+  ...auditColumns,
+}, (table) => [
+  uniqueIndex('usm_school_user').on(table.schoolId, table.userId),
+  index('sm_user_idx').on(table.userId),
+  index('sm_school_idx').on(table.schoolId),
+]);
+
+export type SchoolMembershipRow = typeof schoolMembership.$inferSelect;
+export type NewSchoolMembership = typeof schoolMembership.$inferInsert;

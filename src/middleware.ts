@@ -1,27 +1,28 @@
 /**
- * Middleware — Protège les routes /dashboard/*.
- * Vérifie le token Fantomas OU la session Better-Auth.
+ * Middleware V2 — M1 mise à jour
+ * Vérifie le token Ghost (nouveau cookie) OU la session Better-Auth.
+ * Injecte les headers V2.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyFantomasToken, getFantomasCookieName } from '@/lib/fantomas';
+import { verifyGhostSession, GHOST_COOKIE_NAME } from '@/lib/ghost-auth';
 
-const PUBLIC_PATHS = ['/login', '/api/auth/fantomas', '/api/auth/sign-in'];
+const PUBLIC_PATHS = ['/login', '/api/auth/ghost', '/api/auth/ghost/logout', '/api/auth/sign-in', '/forbidden', '/db-unavailable'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Routes publiques — ne pas protéger
+  // Routes publiques
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
 
-  // Routes API auth — laisser passer (Better-Auth gère lui-même)
+  // Routes API auth — Better Auth gère lui-même
   if (pathname.startsWith('/api/auth/')) {
     return NextResponse.next();
   }
 
-  // Assets statiques — ne pas protéger
+  // Assets statiques
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon') ||
@@ -32,18 +33,20 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Vérifier le token Fantomas
-  const fantomasToken = request.cookies.get(getFantomasCookieName())?.value;
-  if (fantomasToken) {
-    const user = await verifyFantomasToken(fantomasToken);
-    if (user) {
-      // Injecter les infos utilisateur dans les headers pour le layout
+  // Vérifier le token Ghost (nouveau cookie danielou_ghost_session)
+  const ghostToken = request.cookies.get(GHOST_COOKIE_NAME)?.value;
+  if (ghostToken) {
+    const payload = await verifyGhostSession(ghostToken);
+    if (payload) {
       const requestHeaders = new Headers(request.headers);
-      requestHeaders.set('x-user-id', user.id);
-      requestHeaders.set('x-user-name', user.name);
-      requestHeaders.set('x-user-role', user.role);
-      requestHeaders.set('x-user-source', 'fantomas');
+      requestHeaders.set('x-user-id', 'fantomas-ghost');
+      requestHeaders.set('x-user-name', 'Fantomas');
+      requestHeaders.set('x-user-email', 'fantomas');
+      requestHeaders.set('x-user-source', 'ghost');
       requestHeaders.set('x-super-admin', 'true');
+      requestHeaders.set('x-platform-role', 'ghost');
+      requestHeaders.set('x-school-role', 'admin');
+      requestHeaders.set('x-is-ghost', 'true');
       return NextResponse.next({
         request: { headers: requestHeaders },
       });
@@ -53,13 +56,10 @@ export async function middleware(request: NextRequest) {
   // Vérifier la session Better-Auth via cookie
   const sessionToken = request.cookies.get('better-auth.session_token')?.value;
   if (sessionToken) {
-    // On ne vérifie pas la session en DB ici (trop lent pour le middleware).
-    // Si le cookie existe, on laisse passer. La vérification complète
-    // se fait dans getSession() côté serveur.
     return NextResponse.next();
   }
 
-  // Non authentifié — rediriger vers /login
+  // Non authentifié
   const loginUrl = new URL('/login', request.url);
   loginUrl.searchParams.set('redirect', pathname);
   return NextResponse.redirect(loginUrl);

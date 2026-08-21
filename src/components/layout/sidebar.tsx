@@ -28,79 +28,41 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  Database,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useNavigation } from '@/components/providers/navigation-provider';
 
-interface NavItem {
-  label: string;
-  href: string;
-  icon: LucideIcon;
+// Map nom d'icône → composant Lucide
+const ICON_MAP: Record<string, LucideIcon> = {
+  LayoutDashboard,
+  CalendarDays,
+  GraduationCap,
+  School,
+  Users,
+  BookOpen,
+  Puzzle,
+  ClipboardList,
+  Calculator,
+  FileText,
+  PenTool,
+  BarChart3,
+  ScrollText,
+  CheckCircle,
+  Send,
+  History,
+  TrendingUp,
+  UserCog,
+  Shield,
+  Settings,
+  FileSearch,
+  Database,
+};
+
+function getIcon(name: string): LucideIcon {
+  return ICON_MAP[name] ?? FileText;
 }
-
-interface NavSection {
-  title: string | null;
-  items: NavItem[];
-}
-
-const navSections: NavSection[] = [
-  {
-    title: null,
-    items: [
-      { label: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
-    ],
-  },
-  {
-    title: 'Organisation',
-    items: [
-      { label: 'Années scolaires', href: '/dashboard/annees-scolaires', icon: CalendarDays },
-      { label: 'Niveaux', href: '/dashboard/niveaux', icon: GraduationCap },
-      { label: 'Classes', href: '/dashboard/classes', icon: School },
-      { label: 'Élèves', href: '/dashboard/eleves', icon: Users },
-    ],
-  },
-  {
-    title: 'Pédagogie',
-    items: [
-      { label: 'Matières', href: '/dashboard/matieres', icon: BookOpen },
-      { label: 'Composantes', href: '/dashboard/composantes', icon: Puzzle },
-      { label: "Types d'évaluation", href: '/dashboard/types-evaluation', icon: ClipboardList },
-      { label: 'Règles de calcul', href: '/dashboard/regles-calcul', icon: Calculator },
-    ],
-  },
-  {
-    title: 'Évaluations',
-    items: [
-      { label: 'Évaluations', href: '/dashboard/evaluations', icon: FileText },
-      { label: 'Saisie des notes', href: '/dashboard/saisie-notes', icon: PenTool },
-      { label: 'Résultats', href: '/dashboard/resultats', icon: BarChart3 },
-    ],
-  },
-  {
-    title: 'Bulletins',
-    items: [
-      { label: 'Préparation', href: '/dashboard/bulletins/preparation', icon: ScrollText },
-      { label: 'Validation', href: '/dashboard/bulletins/validation', icon: CheckCircle },
-      { label: 'Publication', href: '/dashboard/bulletins/publication', icon: Send },
-      { label: 'Historique', href: '/dashboard/bulletins/historique', icon: History },
-    ],
-  },
-  {
-    title: 'Analyse',
-    items: [
-      { label: 'Statistiques', href: '/dashboard/statistiques', icon: TrendingUp },
-    ],
-  },
-  {
-    title: 'Administration',
-    items: [
-      { label: 'Utilisateurs', href: '/dashboard/admin/utilisateurs', icon: UserCog },
-      { label: 'Rôles', href: '/dashboard/admin/roles', icon: Shield },
-      { label: 'Configuration', href: '/dashboard/admin/configuration', icon: Settings },
-      { label: "Journal d'audit", href: '/dashboard/admin/journal-audit', icon: FileSearch },
-    ],
-  },
-];
 
 interface SidebarProps {
   collapsed: boolean;
@@ -111,6 +73,20 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
+  const { navSections, user, schoolRoleLabel, platformRoleLabel, isGhost } = useNavigation();
+
+  // Initiales pour l'avatar
+  const initials = user.name
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+
+  // Label d'affichage dans la section utilisateur
+  const displayLabel = isGhost
+    ? 'Fantomas'
+    : schoolRoleLabel ?? platformRoleLabel;
 
   const sidebarContent = (
     <div className="flex h-full flex-col">
@@ -145,7 +121,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
         )}
       </button>
 
-      {/* Navigation */}
+      {/* Navigation — filtrée par RBAC */}
       <nav className="flex-1 overflow-y-auto px-3 pb-4 custom-scrollbar">
         {navSections.map((section, sectionIndex) => (
           <div key={sectionIndex} className={sectionIndex > 0 ? 'mt-4' : ''}>
@@ -160,6 +136,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
             <ul className="space-y-0.5">
               {section.items.map((item) => {
                 const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+                const Icon = getIcon(item.icon);
                 return (
                   <li key={item.href}>
                     <Link
@@ -173,7 +150,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
                       )}
                       title={collapsed ? item.label : undefined}
                     >
-                      <item.icon className="h-[18px] w-[18px] shrink-0" />
+                      <Icon className="h-[18px] w-[18px] shrink-0" />
                       {!collapsed && <span className="truncate">{item.label}</span>}
                     </Link>
                   </li>
@@ -184,21 +161,27 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
         ))}
       </nav>
 
-      {/* Bottom user section */}
+      {/* Bottom user section — dynamique selon le rôle */}
       <div className="shrink-0 border-t border-white/10 px-3 py-3">
         <div className={cn('flex items-center gap-3', collapsed && 'justify-center')}>
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sidebar-active text-sidebar-text">
-            <span className="text-xs font-bold">AD</span>
+          <div className={cn(
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sidebar-text',
+            isGhost ? 'bg-brand-accent' : 'bg-sidebar-active'
+          )}>
+            {isGhost ? (
+              <Database className="h-4 w-4" />
+            ) : (
+              <span className="text-xs font-bold">{initials}</span>
+            )}
           </div>
           {!collapsed && (
             <div className="flex flex-1 items-center justify-between min-w-0">
-              <span className="truncate text-sm text-sidebar-text">Administrateur</span>
-              <button
-                className="rounded-radius-sm p-1 text-sidebar-text/70 transition-colors hover:bg-sidebar-hover hover:text-sidebar-text"
-                aria-label="Déconnexion"
-              >
-                <LogOut className="h-4 w-4" />
-              </button>
+              <div className="flex flex-col min-w-0">
+                <span className="truncate text-sm text-sidebar-text">{user.name}</span>
+                <span className="truncate text-[11px] text-sidebar-text/60">
+                  {displayLabel}
+                </span>
+              </div>
             </div>
           )}
         </div>
