@@ -22,7 +22,7 @@ export async function auditGhostAction(
     action,
     entity: context?.entity ?? 'system',
     entity_id: context?.entityId ?? '00000000-0000-0000-0000-000000000000',
-    context: context ? JSON.stringify(context) : null,
+    context: context ? JSON.stringify(safeContext(context)) : null,
   };
 
   try {
