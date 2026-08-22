@@ -1,14 +1,15 @@
 'use server';
 
 /**
- * M1-29.6 — Login Server Action
+ * R-V2-M1-H2 — Login Server Action (Always-Available Fantomas)
  * 
- * Flux :
- * 1. Si l'identifiant correspond à FANTOMAS_USERNAME → Ghost Auth (sans DB)
+ * Flux (§4):
+ * 1. Si l'identifiant correspond à Fantomas → Ghost Auth (sans DB, sans Better Auth)
  * 2. Sinon → Better Auth (username/password puis email/password)
  * 
- * INTERDICTION : Better Auth failure → Ghost fallback.
- * Si l'identifiant n'est pas Fantomas, Ghost n'est JAMAIS essayé.
+ * §4 CRITICAL: No database call is allowed before Fantomas authentication succeeds.
+ * §25: Ordinary user failure → NEVER Ghost fallback.
+ * §37: Cookie set directly from Server Action (no internal fetch).
  */
 
 import { cookies } from 'next/headers';
@@ -30,9 +31,14 @@ export async function loginAction(
     return { success: false, error: 'Veuillez remplir tous les champs.' };
   }
 
-  // 1. Ghost Auth — uniquement si l'identifiant correspond exactement à FANTOMAS_USERNAME
+  // ─────────────────────────────────────────────
+  // 1. Ghost Auth — Fantomas is ALWAYS available (§4)
+  //    No DB call. No Better Auth dependency.
+  //    No external fetch that could swallow cookies (§37).
+  // ─────────────────────────────────────────────
   const ghostConfig = getGhostConfig();
-  if (ghostConfig.available && login.toLowerCase() === ghostConfig.username.toLowerCase()) {
+  // ghostConfig.available is ALWAYS true — no guard needed
+  if (login.toLowerCase() === ghostConfig.username.toLowerCase()) {
     if (validateGhostCredentials(login, password)) {
       try {
         const token = await signGhostSession();
@@ -54,12 +60,14 @@ export async function loginAction(
         return { success: false, error: 'Service Ghost indisponible.' };
       }
     }
-    // Mauvais mot de passe pour Fantomas → ne PAS essayer Better Auth
+    // Mauvais mot de passe pour Fantomas → ne PAS essayer Better Auth (§25/§40)
     return { success: false, error: 'Identifiants invalides.' };
   }
 
-  // 2. Better Auth — essayer username d'abord, puis email
-  // L'identifiant n'est PAS Fantomas, donc Ghost n'est jamais essayé
+  // ─────────────────────────────────────────────
+  // 2. Better Auth — ordinary users (§5, §25)
+  //    Ghost is NEVER tried for non-Fantomas identifiers.
+  // ─────────────────────────────────────────────
   try {
     const { getAuth } = await import('@/lib/auth');
     const auth = getAuth();

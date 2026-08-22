@@ -1,19 +1,28 @@
 /**
- * M1-29.2/29.3/29.4 — Ghost Authentication Module
+ * R-V2-M1-H2 — Always-Available Ghost Authentication Module
  * 
- * Remplace fantomas.ts. Ce module :
- * - Valide les credentials via env vars + timingSafeEqual
- * - Signe et vérifie les JWT Ghost avec GHOST_SESSION_SECRET dédié
- * - Gère le cycle de vie du cookie Ghost
+ * Fantomas authentication is completely independent of:
+ * - PostgreSQL / Neon / any database
+ * - Better Auth
+ * - Vercel / any hosting provider
+ * - GHOST_SESSION_SECRET (optional — affects security mode only)
+ * - FANTOMAS_USERNAME / FANTOMAS_PASSWORD (optional — built-in defaults)
  * 
- * INVARIANT : ce module n'importe JAMAIS le driver DB Drizzle ou Neon,
- * ou quoi que ce soit du schéma DB. Fantomas est indépendant de PostgreSQL.
+ * INVARIANT: this module NEVER imports DB driver, Better Auth, or any
+ * hosting-provider identity mechanism.
+ * 
+ * Security modes (§9/§17/§18):
+ * - external_secret: GHOST_SESSION_SECRET present → preferred cryptographic signing
+ * - built_in_fallback: GHOST_SESSION_SECRET absent → deterministic built-in key
+ *   (integrity protection, not deployment-specific confidentiality — see §20)
+ * 
+ * Both modes produce identical GhostActor with identical permissions.
+ * NO permission degradation in either mode (§10).
  */
 
 import { SignJWT, jwtVerify } from 'jose';
 import { timingSafeEqual } from 'crypto';
 import { getGhostConfig } from './ghost-config';
-import { AuthorizationError } from './authorization';
 
 // ─────────────────────────────────────────────
 // Constants
@@ -34,6 +43,7 @@ export interface GhostTokenPayload {
   actorIdentifier: string;
   role: 'ghost';
   name: string;
+  securityMode: 'external_secret' | 'built_in_fallback';
   iat: number;
   exp: number;
 }
@@ -47,7 +57,7 @@ export interface GhostCookieOptions {
 }
 
 // ─────────────────────────────────────────────
-// Credential Validation (M1-29.2)
+// Credential Validation (§2, §4, §40)
 // ─────────────────────────────────────────────
 
 function normalizeIdentifier(input: string): string {
@@ -69,6 +79,9 @@ function safeEquals(a: string, b: string): boolean {
  * Valide les credentials Ghost.
  * Ne jamais logger le password.
  * 
+ * Works with built-in credentials or env overrides.
+ * No database call. No external dependency.
+ * 
  * @param identifier - L'identifiant saisi par l'utilisateur
  * @param password - Le mot de passe saisi par l'utilisateur
  * @returns true si les credentials correspondent à Fantomas
@@ -78,34 +91,34 @@ export function validateGhostCredentials(
   password: string,
 ): boolean {
   const config = getGhostConfig();
-  if (!config.available) return false;
+  // config.available is ALWAYS true — no guard needed
 
   const normalizedInput = normalizeIdentifier(identifier);
   const normalizedConfig = normalizeIdentifier(config.username);
 
   if (!safeEquals(normalizedInput, normalizedConfig)) return false;
 
-  // FANTOMAS_PASSWORD is guaranteed present when config.available
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const expectedPassword = process.env.FANTOMAS_PASSWORD!;
-  if (!safeEquals(password, expectedPassword)) return false;
+  // Use resolved password (env override or built-in)
+  if (!safeEquals(password, config.password)) return false;
 
   return true;
 }
 
 // ─────────────────────────────────────────────
-// Ghost Session Signer (M1-29.3)
+// Ghost Session Signer (§17, §18)
 // ─────────────────────────────────────────────
 
 /**
- * Signe un JWT Ghost avec GHOST_SESSION_SECRET.
- * Le payload est minimal : sub, actorType, actorIdentifier, role, name, iat, exp.
+ * Signe un JWT Ghost.
+ * 
+ * In external_secret mode: uses GHOST_SESSION_SECRET.
+ * In built_in_fallback mode: uses deterministic built-in key.
+ * 
+ * The payload includes securityMode for audit/debugging.
+ * Permissions are IDENTICAL in both modes (§10).
  */
 export async function signGhostSession(): Promise<string> {
   const config = getGhostConfig();
-  if (!config.available) {
-    throw new AuthorizationError('GHOST_CONFIGURATION_ERROR');
-  }
 
   const now = Math.floor(Date.now() / 1000);
 
@@ -115,6 +128,7 @@ export async function signGhostSession(): Promise<string> {
     actorIdentifier: config.username,
     role: 'ghost',
     name: 'Fantomas',
+    securityMode: config.securityMode,
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt(now)
@@ -123,12 +137,17 @@ export async function signGhostSession(): Promise<string> {
 }
 
 // ─────────────────────────────────────────────
-// Ghost Session Verifier (M1-29.3)
+// Ghost Session Verifier (§17, §18, §41)
 // ─────────────────────────────────────────────
 
 /**
  * Vérifie un token Ghost JWT.
- * Vérifie la signature, l'expiration, sub, et actorType.
+ * 
+ * Works in both security modes:
+ * - Tries the current active secret (external or fallback).
+ * - Validates signature, expiration, sub, and actorType.
+ * 
+ * §41: Modified/forged tokens → null (integrity protected in both modes).
  * 
  * @returns Le payload si valide, null sinon.
  */
@@ -136,7 +155,6 @@ export async function verifyGhostSession(
   token: string,
 ): Promise<GhostTokenPayload | null> {
   const config = getGhostConfig();
-  if (!config.available) return null;
 
   try {
     const { payload } = await jwtVerify(token, config.sessionSecret);
@@ -154,7 +172,7 @@ export async function verifyGhostSession(
 }
 
 // ─────────────────────────────────────────────
-// Cookie Lifecycle (M1-29.4)
+// Cookie Lifecycle
 // ─────────────────────────────────────────────
 
 /**
