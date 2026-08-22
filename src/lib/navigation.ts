@@ -51,6 +51,18 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: 'Users',
         requiredPermissions: ['school:students:read'],
       },
+      {
+        label: 'Inscriptions',
+        href: '/dashboard/inscriptions',
+        icon: 'FilePlus2',
+        requiredPermissions: ['school:enrollments:read'],
+      },
+      {
+        label: 'Affectations de classe',
+        href: '/dashboard/affectations',
+        icon: 'ArrowRightLeft',
+        requiredPermissions: ['school:classrooms:read'],
+      },
     ],
   },
   {
@@ -242,6 +254,20 @@ export const BREADCRUMB_MAP: Array<{
     items: [
       { href: '/dashboard', label: 'Accueil', requiredPermissions: [] },
       { href: '/dashboard/eleves', label: 'Élèves', requiredPermissions: ['school:students:read'] },
+    ],
+  },
+  {
+    prefix: '/dashboard/inscriptions',
+    items: [
+      { href: '/dashboard', label: 'Accueil', requiredPermissions: [] },
+      { href: '/dashboard/inscriptions', label: 'Inscriptions', requiredPermissions: ['school:enrollments:read'] },
+    ],
+  },
+  {
+    prefix: '/dashboard/affectations',
+    items: [
+      { href: '/dashboard', label: 'Accueil', requiredPermissions: [] },
+      { href: '/dashboard/affectations', label: 'Affectations de classe', requiredPermissions: ['school:classrooms:read'] },
     ],
   },
   {

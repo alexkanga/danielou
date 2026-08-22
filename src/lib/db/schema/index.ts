@@ -6,7 +6,8 @@ import { pgTable, text, timestamp, uuid, boolean, integer, numeric, date, pgEnum
 
 export const academicYearStatusEnum = pgEnum('academic_year_status', ['preparation', 'active', 'closed']);
 export const periodStatusEnum = pgEnum('period_status', ['draft', 'open', 'closed']);
-export const enrollmentStatusEnum = pgEnum('enrollment_status', ['active', 'transferred', 'withdrawn']);
+export const enrollmentStatusEnum = pgEnum('enrollment_status', ['active', 'completed', 'transferred_out', 'withdrawn', 'cancelled']);
+export const classroomAssignmentStatusEnum = pgEnum('classroom_assignment_status', ['active', 'transferred', 'completed', 'withdrawn', 'cancelled']);
 export const gradeStatusEnum = pgEnum('grade_status', ['graded', 'absent_excused', 'absent_unexcused', 'exempt', 'not_evaluated', 'pending']);
 export const reportCardStatusEnum = pgEnum('report_card_status', ['draft', 'ready', 'validated', 'published']);
 export const configStatusEnum = pgEnum('config_status', ['draft', 'active', 'archived']);
@@ -129,15 +130,39 @@ export const student = pgTable('student', {
 
 export const enrollment = pgTable('enrollment', {
   id: uuid('id').primaryKey().defaultRandom(),
-  studentId: uuid('student_id').notNull().references(() => student.id, { onDelete: 'cascade' }),
-  classroomId: uuid('classroom_id').notNull().references(() => classroom.id),
-  academicYearId: uuid('academic_year_id').notNull().references(() => academicYear.id),
+  schoolId: uuid('school_id').notNull().references(() => school.id, { onDelete: 'restrict' }),
+  studentId: uuid('student_id').notNull().references(() => student.id, { onDelete: 'restrict' }),
+  academicYearId: uuid('academic_year_id').notNull().references(() => academicYear.id, { onDelete: 'restrict' }),
   status: enrollmentStatusEnum('status').notNull().default('active'),
+  enrolledAt: date('enrolled_at'),
+  exitedAt: date('exited_at'),
   ...auditColumns,
 }, (table) => [
   uniqueIndex('ue_student_year').on(table.studentId, table.academicYearId),
-  index('en_classroom_idx').on(table.classroomId),
+  index('en_school_idx').on(table.schoolId),
+  index('en_status_idx').on(table.status),
 ]);
+
+// ==============================================
+// CLASSROOM ASSIGNMENT (M2)
+// ==============================================
+
+export const classroomAssignment = pgTable('classroom_assignment', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  enrollmentId: uuid('enrollment_id').notNull().references(() => enrollment.id, { onDelete: 'restrict' }),
+  classroomId: uuid('classroom_id').notNull().references(() => classroom.id, { onDelete: 'restrict' }),
+  startDate: date('start_date').notNull(),
+  endDate: date('end_date'),
+  status: classroomAssignmentStatusEnum('status').notNull().default('active'),
+  ...auditColumns,
+}, (table) => [
+  index('ca_enrollment_idx').on(table.enrollmentId),
+  index('ca_classroom_idx').on(table.classroomId),
+  index('ca_status_idx').on(table.status),
+]);
+
+export type ClassroomAssignment = typeof classroomAssignment.$inferSelect;
+export type NewClassroomAssignment = typeof classroomAssignment.$inferInsert;
 
 // ==============================================
 // SUBJECT
@@ -477,3 +502,14 @@ export const schoolMembership = pgTable('school_membership', {
 
 export type SchoolMembershipRow = typeof schoolMembership.$inferSelect;
 export type NewSchoolMembership = typeof schoolMembership.$inferInsert;
+
+// ==============================================
+// CONFIG SUBJECT (type re-export)
+// ==============================================
+
+export type ConfigSubject = typeof configSubject.$inferSelect;
+export type NewConfigSubject = typeof configSubject.$inferInsert;
+export type ConfigComponent = typeof configComponent.$inferSelect;
+export type NewConfigComponent = typeof configComponent.$inferInsert;
+export type TeacherAssignment = typeof teacherAssignment.$inferSelect;
+export type NewTeacherAssignment = typeof teacherAssignment.$inferInsert;

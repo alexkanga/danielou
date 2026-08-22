@@ -1,27 +1,18 @@
 /**
- * M1-29.4 — Ghost Login Endpoint
+ * R-V2-M1-H2 — Ghost Login Endpoint (Always-Available)
  * POST /api/auth/ghost
- * Fonctionne sans base de données.
+ * 
+ * Fonctionne sans base de données, sans Better Auth, sans
+ * secret de session externe. Fantomas est TOUJOURS disponible.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { validateGhostCredentials, signGhostSession, getGhostCookieOptions } from '@/lib/ghost-auth';
-import { getGhostConfig } from '@/lib/ghost-config';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { auditGhostAction } from '@/lib/audit';
-import { AuthorizationError } from '@/lib/authorization';
 
 export async function POST(request: NextRequest) {
-  // 1. Configuration check
-  const config = getGhostConfig();
-  if (!config.available) {
-    return NextResponse.json(
-      { error: 'GHOST_CONFIGURATION_ERROR' },
-      { status: 503 },
-    );
-  }
-
-  // 2. Rate limiting
+  // §36: Rate limiting (provider-independent, in-memory)
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
   const rateCheck = checkRateLimit(ip);
   if (!rateCheck.allowed) {
@@ -34,7 +25,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 3. Validation des credentials
+  // Validation des credentials
   try {
     const body = await request.json();
     const { identifier, password } = body;
@@ -47,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!validateGhostCredentials(identifier, password)) {
-      // Audit failure (sans le password)
+      // Audit failure (sans le password) — §34: DB unavailable must not prevent audit attempt
       await auditGhostAction('ghost_login_failure', { ip }).catch(() => {});
       return NextResponse.json(
         { error: 'INVALID_CREDENTIALS' },
@@ -55,13 +46,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 4. Signer la session Ghost
+    // Signer la session Ghost (works in both security modes)
     const token = await signGhostSession();
 
-    // 5. Audit success
+    // Audit success
     await auditGhostAction('ghost_login_success', { ip }).catch(() => {});
 
-    // 6. Set cookie + répondre
+    // Set cookie + répondre (§37: no internal fetch, direct cookie)
     const response = NextResponse.json({
       success: true,
       user: {
@@ -81,13 +72,7 @@ export async function POST(request: NextRequest) {
     });
 
     return response;
-  } catch (err) {
-    if (err instanceof AuthorizationError && err.code === 'GHOST_CONFIGURATION_ERROR') {
-      return NextResponse.json(
-        { error: 'GHOST_CONFIGURATION_ERROR' },
-        { status: 503 },
-      );
-    }
+  } catch {
     return NextResponse.json(
       { error: 'INVALID_CREDENTIALS' },
       { status: 401 },

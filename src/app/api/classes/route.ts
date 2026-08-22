@@ -44,6 +44,7 @@ export async function GET(request: NextRequest) {
       .innerJoin(academicYear, eq(classroom.academicYearId, academicYear.id))
       .where(whereClause);
 
+    // V2: student count via classroom_assignment, NOT enrollment.classroom_id
     const data = await db
       .select({
         id: classroom.id,
@@ -55,10 +56,12 @@ export async function GET(request: NextRequest) {
         levelName: level.name,
         yearName: academicYear.name,
         studentCount: sql<number>`(
-          SELECT count(*)::int
-          FROM enrollment
-          WHERE enrollment.classroom_id = classroom.id
-          AND enrollment.status = 'active'
+          SELECT count(DISTINCT ca.enrollment_id)::int
+          FROM classroom_assignment ca
+          INNER JOIN enrollment e ON e.id = ca.enrollment_id
+          WHERE ca.classroom_id = classroom.id
+          AND ca.status = 'active'
+          AND e.status = 'active'
         )`,
       })
       .from(classroom)

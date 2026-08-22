@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq, and, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { classroom, level, academicYear, enrollment, assessment } from '@/lib/db/schema';
+import { classroom, level, academicYear, classroomAssignment, assessment } from '@/lib/db/schema';
 import { requireSession } from '@/lib/session';
 import { updateClassroomSchema } from '@/lib/validations/scolarite';
 import { handleApiError } from '@/lib/data-access/get-school';
@@ -27,6 +27,7 @@ export async function GET(
     await requireSession();
     const { id } = await params;
 
+    // V2: student count via classroom_assignment
     const rows = await db
       .select({
         id: classroom.id,
@@ -38,10 +39,12 @@ export async function GET(
         levelName: level.name,
         yearName: academicYear.name,
         studentCount: sql<number>`(
-          SELECT count(*)::int
-          FROM enrollment
-          WHERE enrollment.classroom_id = classroom.id
-          AND enrollment.status = 'active'
+          SELECT count(DISTINCT ca.enrollment_id)::int
+          FROM classroom_assignment ca
+          INNER JOIN enrollment e ON e.id = ca.enrollment_id
+          WHERE ca.classroom_id = classroom.id
+          AND ca.status = 'active'
+          AND e.status = 'active'
         )`,
       })
       .from(classroom)
@@ -142,20 +145,21 @@ export async function DELETE(
       return NextResponse.json({ error: 'Classe introuvable.' }, { status: 404 });
     }
 
-    const [activeEnrollment] = await db
-      .select({ id: enrollment.id })
-      .from(enrollment)
+    // V2: Check via classroom_assignment instead of enrollment.classroom_id
+    const [activeAssignment] = await db
+      .select({ id: classroomAssignment.id })
+      .from(classroomAssignment)
       .where(
         and(
-          eq(enrollment.classroomId, id),
-          eq(enrollment.status, 'active'),
+          eq(classroomAssignment.classroomId, id),
+          eq(classroomAssignment.status, 'active'),
         ),
       )
       .limit(1);
 
-    if (activeEnrollment) {
+    if (activeAssignment) {
       return NextResponse.json(
-        { error: 'Cette classe contient des élèves inscrits et ne peut pas être supprimée.' },
+        { error: 'Cette classe contient des élèves affectés et ne peut pas être supprimée.' },
         { status: 409 },
       );
     }

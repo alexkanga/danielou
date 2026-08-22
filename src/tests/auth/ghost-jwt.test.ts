@@ -1,13 +1,14 @@
 /**
- * M1 Security Gate — Ghost JWT Tests
+ * R-V2-M1-H2 — Ghost JWT Tests (Always-Available)
  * 
- * Tests GHOST-01/02/03/05/06/08/18 — JWT signing et vérification.
- * Ces tests nécessitent crypto natif (Node.js).
+ * Tests JWT signing and verification in BOTH security modes:
+ * - external_secret (GHOST_SESSION_SECRET present)
+ * - built_in_fallback (no secret)
  * 
  * @vitest-environment node
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 import { SignJWT } from 'jose';
 import {
   signGhostSession,
@@ -36,7 +37,9 @@ async function signWithSecret(secret: string, payloadOverrides: Record<string, u
     .sign(new TextEncoder().encode(secret));
 }
 
-describe('Ghost JWT Session (Node.js crypto required)', () => {
+clearGhostEnv();
+
+describe('Ghost JWT — external_secret mode', () => {
   beforeAll(() => {
     process.env.FANTOMAS_USERNAME = 'fantomas';
     process.env.FANTOMAS_PASSWORD = 'fantomas';
@@ -45,9 +48,7 @@ describe('Ghost JWT Session (Node.js crypto required)', () => {
   });
 
   afterAll(() => {
-    delete process.env.FANTOMAS_USERNAME;
-    delete process.env.FANTOMAS_PASSWORD;
-    delete process.env.GHOST_SESSION_SECRET;
+    clearGhostEnv();
     _resetGhostConfigCache();
   });
 
@@ -60,11 +61,10 @@ describe('Ghost JWT Session (Node.js crypto required)', () => {
     expect(payload!.actorType).toBe('ghost');
     expect(payload!.role).toBe('ghost');
     expect(payload!.name).toBe('Fantomas');
+    expect(payload!.securityMode).toBe('external_secret');
   });
 
-  it('GHOST-02/03: session works without any DB import (architectural invariant)', async () => {
-    // Si on arrive ici, ghost-auth.ts n'a rien importé de la DB.
-    // L'invariant est que le module est indépendant de PostgreSQL.
+  it('GHOST-02/03: session works without any DB import', async () => {
     const token = await signGhostSession();
     const payload = await verifyGhostSession(token);
     expect(payload).not.toBeNull();
@@ -77,7 +77,6 @@ describe('Ghost JWT Session (Node.js crypto required)', () => {
   });
 
   it('GHOST-06: expired session → null', async () => {
-    // Créer un token avec exp explicitement dans le passé
     const pastExp = Math.floor(Date.now() / 1000) - 100;
     const expiredToken = await new SignJWT({
       sub: 'fantomas-ghost',
@@ -95,24 +94,8 @@ describe('Ghost JWT Session (Node.js crypto required)', () => {
     expect(payload).toBeNull();
   });
 
-  it('GHOST-08: secret rotation invalidates old sessions', async () => {
-    // Signer avec l'ancien secret
-    const token = await signGhostSession();
-    const validBefore = await verifyGhostSession(token);
-    expect(validBefore).not.toBeNull();
-
-    // Changer le secret
-    process.env.GHOST_SESSION_SECRET = NEW_SECRET;
-    _resetGhostConfigCache();
-
-    // L'ancien token doit être rejeté
-    const validAfter = await verifyGhostSession(token);
-    expect(validAfter).toBeNull();
-  });
-
   it('GHOST-18: modified cookie → null', async () => {
     const token = await signGhostSession();
-    // Modifier un caractère du token
     const modified = token.slice(0, -5) + 'XXXXX';
     const payload = await verifyGhostSession(modified);
     expect(payload).toBeNull();
@@ -126,7 +109,6 @@ describe('Ghost JWT Session (Node.js crypto required)', () => {
       role: 'ghost',
       name: 'Impostor',
     });
-
     const payload = await verifyGhostSession(badSubToken);
     expect(payload).toBeNull();
   });
@@ -139,7 +121,6 @@ describe('Ghost JWT Session (Node.js crypto required)', () => {
       role: 'admin',
       name: 'Fantomas',
     });
-
     const payload = await verifyGhostSession(badActorToken);
     expect(payload).toBeNull();
   });
@@ -154,3 +135,147 @@ describe('Ghost JWT Session (Node.js crypto required)', () => {
     expect(payload).toBeNull();
   });
 });
+
+describe('H2: Ghost JWT — built_in_fallback mode (NO secret)', () => {
+  beforeAll(() => {
+    // Ensure NO Ghost env vars are set
+    delete process.env.FANTOMAS_USERNAME;
+    delete process.env.FANTOMAS_PASSWORD;
+    delete process.env.GHOST_SESSION_SECRET;
+    _resetGhostConfigCache();
+  });
+
+  afterAll(() => {
+    clearGhostEnv();
+    _resetGhostConfigCache();
+  });
+
+  it('H2-FALLBACK-01: sign and verify without GHOST_SESSION_SECRET', async () => {
+    const token = await signGhostSession();
+    expect(token).toBeTruthy();
+    const payload = await verifyGhostSession(token);
+    expect(payload).not.toBeNull();
+    expect(payload!.sub).toBe('fantomas-ghost');
+    expect(payload!.actorType).toBe('ghost');
+    expect(payload!.securityMode).toBe('built_in_fallback');
+  });
+
+  it('H2-FALLBACK-02: forged token rejected in fallback mode', async () => {
+    const forgedToken = await signWithSecret('some-random-key-32-chars-minimum!!');
+    const payload = await verifyGhostSession(forgedToken);
+    expect(payload).toBeNull();
+  });
+
+  it('H2-FALLBACK-03: modified cookie rejected in fallback mode', async () => {
+    const token = await signGhostSession();
+    const modified = token.slice(0, -3) + 'XXX';
+    const payload = await verifyGhostSession(modified);
+    expect(payload).toBeNull();
+  });
+
+  it('H2-FALLBACK-04: expired token rejected in fallback mode', async () => {
+    const { getGhostConfig } = await import('@/lib/ghost-config');
+    const config = getGhostConfig();
+    const pastExp = Math.floor(Date.now() / 1000) - 100;
+    const expiredToken = await new SignJWT({
+      sub: 'fantomas-ghost',
+      actorType: 'ghost',
+      actorIdentifier: 'fantomas',
+      role: 'ghost',
+      name: 'Fantomas',
+      exp: pastExp,
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuedAt(Math.floor(Date.now() / 1000) - 700000)
+      .sign(config.sessionSecret);
+
+    const payload = await verifyGhostSession(expiredToken);
+    expect(payload).toBeNull();
+  });
+
+  it('H2-FALLBACK-05: wrong sub rejected in fallback mode', async () => {
+    const { getGhostConfig } = await import('@/lib/ghost-config');
+    const config = getGhostConfig();
+    const badSubToken = await new SignJWT({
+      sub: 'impostor',
+      actorType: 'ghost',
+      actorIdentifier: 'impostor',
+      role: 'ghost',
+      name: 'Impostor',
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuedAt()
+      .setExpirationTime('7d')
+      .sign(config.sessionSecret);
+
+    const payload = await verifyGhostSession(badSubToken);
+    expect(payload).toBeNull();
+  });
+
+  it('H2-FALLBACK-06: tokens signed in external_secret mode are NOT valid in fallback mode', async () => {
+    // Sign with external secret
+    const externalToken = await signWithSecret(TEST_SECRET);
+    // Verify in fallback mode (no GHOST_SESSION_SECRET set)
+    const payload = await verifyGhostSession(externalToken);
+    expect(payload).toBeNull();
+  });
+});
+
+describe('H2: Ghost JWT — mode transition', () => {
+  afterEach(() => { clearGhostEnv(); });
+
+  it('H2-TRANSITION-01: secret rotation invalidates old sessions', async () => {
+    process.env.GHOST_SESSION_SECRET = TEST_SECRET;
+    _resetGhostConfigCache();
+
+    const token = await signGhostSession();
+    const validBefore = await verifyGhostSession(token);
+    expect(validBefore).not.toBeNull();
+
+    process.env.GHOST_SESSION_SECRET = NEW_SECRET;
+    _resetGhostConfigCache();
+
+    const validAfter = await verifyGhostSession(token);
+    expect(validAfter).toBeNull();
+  });
+});
+
+describe('H2: Ghost JWT — permission parity (§27, §28)', () => {
+  it('H2-PARITY-01: Ghost gets all SUPER_ADMIN permissions via platform override', async () => {
+    const { checkPermission } = await import('@/lib/authorization');
+    type Permission = import('@/lib/types/rbac').Permission;
+
+    // All defined permissions in the system
+    const allPermissions: Permission[] = [
+      'platform:users:manage', 'platform:users:create_super_admin',
+      'platform:schools:create', 'platform:recovery',
+      'school:academic_years:read', 'school:academic_years:manage',
+      'school:levels:read', 'school:levels:manage',
+      'school:classrooms:read', 'school:classrooms:manage',
+      'school:students:read', 'school:students:manage',
+      'school:enrollments:read', 'school:enrollments:manage',
+      'school:subjects:read', 'school:subjects:manage',
+      'school:components:read', 'school:components:manage',
+      'school:assessment_types:read', 'school:assessment_types:manage',
+      'school:pedagogical_config:read', 'school:pedagogical_config:manage',
+      'school:assessments:read', 'school:assessments:manage',
+      'school:grades:read', 'school:grades:manage',
+      'school:report_cards:read', 'school:report_cards:prepare',
+      'school:report_cards:validate', 'school:report_cards:publish',
+      'school:annual_results:read', 'school:annual_results:manage',
+      'school:statistics:read',
+      'school:audit_log:read',
+    ];
+
+    for (const perm of allPermissions) {
+      expect(checkPermission('ghost', null, perm)).toBe(true);
+    }
+  });
+});
+
+function clearGhostEnv() {
+  delete process.env.FANTOMAS_USERNAME;
+  delete process.env.FANTOMAS_PASSWORD;
+  delete process.env.GHOST_SESSION_SECRET;
+  _resetGhostConfigCache();
+}

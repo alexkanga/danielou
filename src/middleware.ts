@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyGhostSession, GHOST_COOKIE_NAME } from '@/lib/ghost-auth';
 
-const PUBLIC_PATHS = ['/login', '/api/auth/ghost', '/api/auth/ghost/logout', '/api/auth/sign-in', '/forbidden', '/db-unavailable'];
+const PUBLIC_PATHS = ['/login', '/api/auth/ghost', '/api/auth/ghost/logout', '/api/auth/sign-in', '/api/auth/logout', '/forbidden', '/db-unavailable', '/api/system/status'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

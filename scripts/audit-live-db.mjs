@@ -5,7 +5,7 @@
 
 import { neon } from '@neondatabase/serverless';
 
-const DATABASE_URL = 'postgresql://neondb_owner:npg_kajScfx40nhJ@ep-empty-boat-b1uvact9-pooler.c-5.eu-central-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require';
+const DATABASE_URL = process.env.DATABASE_URL;
 const sql = neon(DATABASE_URL);
 
 async function audit() {

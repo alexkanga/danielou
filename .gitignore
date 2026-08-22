@@ -30,7 +30,9 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # environment files
+.env
 .env.local
+.env.*.local
 .env.production
 .env.test
 
@@ -52,5 +54,8 @@ drizzle/meta/
 # IDE
 .idea/
 .vscode/
-*.swp
 *.swo
+*.swp
+
+# S1 import — private student data (NEVER commit)
+data/private/
