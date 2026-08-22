@@ -53,4 +53,4 @@ drizzle/meta/
 .idea/
 .vscode/
 *.swp
-*.swo
+*.swodata/private/
