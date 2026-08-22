@@ -1,8 +1,8 @@
 # Daniélou — Agent Continuity Checkpoint
 
 **Date:** 2026-08-23
-**HEAD:** 07ac533 (main, pushed to origin)
-**Phase:** Post PRE-M3 Closure — Pre M3
+**HEAD:** M3 branch (v2/m3-pedagogy-configuration), baseline 471c821 (main, pushed)
+**Phase:** M3 — Phase B complete, awaiting Phase C GO
 
 ## Project State
 
@@ -22,11 +22,15 @@
 | PRE-M3 Release Gate | PASS — all 33 requirements verified |
 | Migrations 0003 (triggers) + 0004 (FK RESTRICT) on PROD | APPLIED |
 | Recovery secrets audit | DONE — 4 REQUIRED identified |
+| M3 Phase A Preflight | PASS |
+| M3 Phase A Security Closure | PASS — 7 credential scripts moved out, local git exclude protection |
+| M3 Phase B Current-State Audit | PASS — 6 pedagogy tables, 0 legacy, 3 moderate/4 low findings, GO for Phase C |
 
 ## Pending / Next
 
-- M3 implementation — BLOCKED until explicit owner GO
+- Phase C — Target Model & Invariants Freeze — BLOCKED until explicit owner GO
 - Tags `v2-pre-m3-final-pass` and `v2-pre-m3-pass` exist on remote
+- M3 branch: `v2/m3-pedagogy-configuration`
 
 ## Recovery
 
@@ -36,9 +40,10 @@
 
 ## Known Artifacts NOT in Git
 
-- 7 scripts in `scripts/` containing hardcoded Neon prod credentials (intentionally untracked)
 - `DANIELOU_RECOVERY_SECRETS.txt` (outside repo)
 - `.env.local` (gitignored)
+- Legacy one-off scripts moved to `/home/z/my-project/danielou-legacy-scripts/` (outside repo, contains 7 scripts with hardcoded DB credentials, no longer in workspace)
+- Local `.git/info/exclude` patterns block future accidental adds of prod/closure scripts
 
 ## Critical Operational Knowledge
 
