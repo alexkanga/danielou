@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq, and } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { academicYear, academicPeriod, classroom, enrollment } from '@/lib/db/schema';
-import { requireSession } from '@/lib/session';
+import { requireAuthorizedSession } from '@/lib/server-guards';
 import { updateAcademicYearSchema } from '@/lib/validations/scolarite';
 import { handleApiError } from '@/lib/data-access/get-school';
 import type { AcademicPeriod } from '@/lib/db/schema';
@@ -13,7 +13,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await requireSession();
+    await requireAuthorizedSession('school:academic_years:read');
     const { id } = await params;
 
     const [found] = await db.select().from(academicYear).where(eq(academicYear.id, id)).limit(1);
@@ -39,7 +39,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await requireSession();
+    await requireAuthorizedSession('school:academic_years:manage');
     const { id } = await params;
 
     const [existing] = await db.select().from(academicYear).where(eq(academicYear.id, id)).limit(1);
@@ -89,7 +89,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await requireSession();
+    await requireAuthorizedSession('school:academic_years:manage');
     const { id } = await params;
 
     const [existing] = await db.select().from(academicYear).where(eq(academicYear.id, id)).limit(1);

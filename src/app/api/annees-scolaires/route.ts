@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq, like, sql, desc, and } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { academicYear, academicPeriod } from '@/lib/db/schema';
-import { requireSession } from '@/lib/session';
+import { requireAuthorizedSession } from '@/lib/server-guards';
 import { createAcademicYearSchema } from '@/lib/validations/scolarite';
 import { parsePagination, computePagination } from '@/lib/data-access/pagination';
 import { getSchoolId, handleApiError } from '@/lib/data-access/get-school';
@@ -14,7 +14,7 @@ type AcademicYearListResult = PaginatedResult<AcademicYear>;
 // GET /api/annees-scolaires — List academic years with pagination & search
 export async function GET(request: NextRequest) {
   try {
-    await requireSession();
+    await requireAuthorizedSession('school:academic_years:read');
     const schoolId = await getSchoolId();
 
     const { page, limit, search } = parsePagination(request.nextUrl.searchParams);
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
 // POST /api/annees-scolaires — Create an academic year (with optional periods)
 export async function POST(request: NextRequest) {
   try {
-    await requireSession();
+    await requireAuthorizedSession('school:academic_years:manage');
     const schoolId = await getSchoolId();
 
     const body = await request.json();

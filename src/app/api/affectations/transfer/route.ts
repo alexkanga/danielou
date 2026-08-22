@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { transferEnrollmentToClassroom } from '@/lib/services/classroom-assignment';
-import { requireSession } from '@/lib/session';
+import { requireAuthorizedSession } from '@/lib/server-guards';
 import { getSchoolId, handleApiError } from '@/lib/data-access/get-school';
 import { z } from 'zod';
 
@@ -13,7 +13,7 @@ const transferSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    await requireSession();
+    await requireAuthorizedSession('school:enrollments:manage');
     const schoolId = await getSchoolId();
 
     const body = await request.json();

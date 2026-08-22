@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, ShieldX, Database } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 
 export default function Error({
   error,

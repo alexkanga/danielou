@@ -26,7 +26,6 @@ export default async function DashboardLayout({
       const platformRole = (headersList.get('x-platform-role') as PlatformRole) ?? 'ghost';
       const schoolRole = (headersList.get('x-school-role') as SchoolRole) ?? 'admin';
       const isGhost = headersList.get('x-is-ghost') === 'true';
-      const isSuperAdmin = headersList.get('x-super-admin') === 'true';
 
       const user: SessionUserV2 = {
         id: userId,

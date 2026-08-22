@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq, like, sql, asc, and } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { level } from '@/lib/db/schema';
-import { requireSession } from '@/lib/session';
+import { requireAuthorizedSession } from '@/lib/server-guards';
 import { createLevelSchema } from '@/lib/validations/scolarite';
 import { parsePagination, computePagination } from '@/lib/data-access/pagination';
 import { getSchoolId, handleApiError } from '@/lib/data-access/get-school';
@@ -14,7 +14,7 @@ type LevelResult = PaginatedResult<Level>;
 // GET /api/niveaux — List niveaux with pagination & search
 export async function GET(request: NextRequest) {
   try {
-    await requireSession();
+    await requireAuthorizedSession('school:levels:read');
     const schoolId = await getSchoolId();
 
     const { page, limit, search } = parsePagination(request.nextUrl.searchParams);
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
 // POST /api/niveaux — Create a niveau
 export async function POST(request: NextRequest) {
   try {
-    await requireSession();
+    await requireAuthorizedSession('school:levels:manage');
     const schoolId = await getSchoolId();
 
     const body = await request.json();

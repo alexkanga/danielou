@@ -7,7 +7,7 @@
 
 import { cookies } from 'next/headers';
 import { verifyGhostSession, GHOST_COOKIE_NAME, type GhostTokenPayload } from './ghost-auth';
-import type { PlatformRole, SchoolRole, SchoolMembership } from './types/rbac';
+import type { SchoolMembership } from './types/rbac';
 
 // ─────────────────────────────────────────────
 // Actor Types

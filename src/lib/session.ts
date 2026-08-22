@@ -6,7 +6,7 @@
 
 import { cookies } from 'next/headers';
 import { verifyGhostSession, GHOST_COOKIE_NAME } from './ghost-auth';
-import type { PlatformRole, SchoolRole, SessionUserV2, SchoolMembership, AppSessionV2 } from './types/rbac';
+import type { PlatformRole, SessionUserV2, SchoolMembership, AppSessionV2 } from './types/rbac';
 import { derivePlatformRole, deriveSchoolRole } from './authorization';
 
 export type AppSession = AppSessionV2;

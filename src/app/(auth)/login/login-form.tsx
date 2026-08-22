@@ -17,7 +17,8 @@ export function LoginForm() {
   // Rediriger après succès
   if (result?.success) {
     const redirect = searchParams.get('redirect') || '/dashboard';
-    router.push(redirect);
+    // Prevent open redirect: only allow relative paths starting with /
+    router.push(redirect.startsWith('/') ? redirect : '/dashboard');
     router.refresh();
     return null;
   }

@@ -8,8 +8,6 @@
 import { eq } from 'drizzle-orm';
 import { getDb } from './db';
 import { user } from './db/schema';
-import { AuthorizationError } from './authorization';
-
 export interface BootstrapResult {
   success: boolean;
   userId?: string;
@@ -61,6 +59,9 @@ export async function bootstrapSuperAdmin(
     const db = getDb();
     const { hash } = await import('bcryptjs');
     const hashedPassword = await hash(password, 10);
+    // Note: hashedPassword is not stored here because Better Auth manages its own
+    // password hashing via its own account table.
+    void hashedPassword;
 
     const [created] = await db
       .insert(user)
@@ -105,7 +106,7 @@ export async function promoteToSuperAdmin(userId: string): Promise<BootstrapResu
       .where(eq(user.id, userId));
 
     return { success: true, userId };
-  } catch (err) {
+  } catch {
     return { success: false, error: 'Database error during promotion' };
   }
 }

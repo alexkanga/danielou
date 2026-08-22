@@ -25,7 +25,6 @@ import {
   Shield,
   Settings,
   FileSearch,
-  LogOut,
   ChevronLeft,
   ChevronRight,
   Database,

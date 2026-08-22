@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq, and, sql, desc } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { classroomAssignment, enrollment, classroom, level, academicYear, student } from '@/lib/db/schema';
-import { requireSession } from '@/lib/session';
+import { requireAuthorizedSession } from '@/lib/server-guards';
 import { getSchoolId, handleApiError } from '@/lib/data-access/get-school';
 import { assignEnrollmentToClassroom } from '@/lib/services/classroom-assignment';
 import { z } from 'zod';
@@ -10,7 +10,7 @@ import { z } from 'zod';
 // GET /api/affectations — List classroom assignments
 export async function GET(request: NextRequest) {
   try {
-    await requireSession();
+    await requireAuthorizedSession('school:enrollments:read');
     const schoolId = await getSchoolId();
 
     const url = request.nextUrl.searchParams;
@@ -88,7 +88,7 @@ const assignSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    await requireSession();
+    await requireAuthorizedSession('school:enrollments:manage');
     const schoolId = await getSchoolId();
 
     const body = await request.json();

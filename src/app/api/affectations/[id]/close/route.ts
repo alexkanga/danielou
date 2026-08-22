@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { closeClassroomAssignment } from '@/lib/services/classroom-assignment';
-import { requireSession } from '@/lib/session';
+import { requireAuthorizedSession } from '@/lib/server-guards';
 import { getSchoolId, handleApiError } from '@/lib/data-access/get-school';
 import { z } from 'zod';
 
@@ -15,7 +15,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await requireSession();
+    await requireAuthorizedSession('school:enrollments:manage');
     const schoolId = await getSchoolId();
     const { id } = await params;
 

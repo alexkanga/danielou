@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq, and, sql, or, asc } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { student, enrollment, classroom, level, classroomAssignment } from '@/lib/db/schema';
-import { requireSession } from '@/lib/session';
+import { requireAuthorizedSession } from '@/lib/server-guards';
 import { createStudentSchema } from '@/lib/validations/scolarite';
 import { computePagination } from '@/lib/data-access/pagination';
 import { getSchoolId, handleApiError } from '@/lib/data-access/get-school';
@@ -19,7 +19,7 @@ type StudentResult = PaginatedResult<StudentWithEnrollment>;
 // GET /api/eleves
 export async function GET(request: NextRequest) {
   try {
-    await requireSession();
+    await requireAuthorizedSession('school:students:read');
     const schoolId = await getSchoolId();
 
     const { page, limit, search, academicYearId } = parsePaginationWithYear(request.nextUrl.searchParams);
@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
 // POST /api/eleves
 export async function POST(request: NextRequest) {
   try {
-    await requireSession();
+    await requireAuthorizedSession('school:students:manage');
     const schoolId = await getSchoolId();
 
     const body = await request.json();

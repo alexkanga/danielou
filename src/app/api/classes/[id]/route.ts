@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq, and, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { classroom, level, academicYear, classroomAssignment, assessment } from '@/lib/db/schema';
-import { requireSession } from '@/lib/session';
+import { requireAuthorizedSession } from '@/lib/server-guards';
 import { updateClassroomSchema } from '@/lib/validations/scolarite';
 import { handleApiError } from '@/lib/data-access/get-school';
 
@@ -24,7 +24,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await requireSession();
+    await requireAuthorizedSession('school:classrooms:read');
     const { id } = await params;
 
     // V2: student count via classroom_assignment
@@ -70,7 +70,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await requireSession();
+    await requireAuthorizedSession('school:classrooms:manage');
     const { id } = await params;
 
     const [existing] = await db
@@ -133,7 +133,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await requireSession();
+    await requireAuthorizedSession('school:classrooms:manage');
     const { id } = await params;
 
     const [existing] = await db

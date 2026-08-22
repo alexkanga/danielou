@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq, desc } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { classroomAssignment, enrollment, classroom, level, academicYear, student } from '@/lib/db/schema';
-import { requireSession } from '@/lib/session';
+import { requireAuthorizedSession } from '@/lib/server-guards';
 import { handleApiError } from '@/lib/data-access/get-school';
 
 // GET /api/affectations/[id] — Get assignment history for an enrollment
@@ -11,7 +11,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await requireSession();
+    await requireAuthorizedSession('school:enrollments:read');
     const { id } = await params;
 
     const rows = await db

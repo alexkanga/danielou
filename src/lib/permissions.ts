@@ -147,6 +147,9 @@ export function platformRoleHasPermission(
   platformRole: PlatformRole,
   permission: Permission,
 ): boolean {
+  // Permission parameter is validated via checkPermission() for non-ghost/super_admin.
+  // Here, ghost and super_admin bypass all checks, so we acknowledge but don't inspect it.
+  void permission;
   if (platformRole === 'ghost') return true;
   if (platformRole === 'super_admin') {
     // SUPER_ADMIN a toutes les permissions plateforme + tous les droits admin

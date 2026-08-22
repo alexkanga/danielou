@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq, and } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { student, enrollment, classroom, level, classroomAssignment } from '@/lib/db/schema';
-import { requireSession } from '@/lib/session';
+import { requireAuthorizedSession } from '@/lib/server-guards';
 import { updateStudentSchema } from '@/lib/validations/scolarite';
 import { handleApiError } from '@/lib/data-access/get-school';
 import type { Student } from '@/lib/db/schema';
@@ -19,7 +19,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await requireSession();
+    await requireAuthorizedSession('school:students:read');
     const { id } = await params;
 
     // V2: JOIN through classroom_assignment
@@ -88,7 +88,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await requireSession();
+    await requireAuthorizedSession('school:students:manage');
     const { id } = await params;
 
     const [existing] = await db.select().from(student).where(eq(student.id, id)).limit(1);
@@ -129,7 +129,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await requireSession();
+    await requireAuthorizedSession('school:students:manage');
     const { id } = await params;
 
     const [existing] = await db.select().from(student).where(eq(student.id, id)).limit(1);

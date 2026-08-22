@@ -27,8 +27,8 @@ for pattern in "${FORBIDDEN_PATTERNS[@]}"; do
   fi
 done
 
-# Check source files for SQLite imports
-if find "$PROJECT_ROOT/src" -name '*.ts' -o -name '*.tsx' | xargs grep -l -E 'sqlite|libsql|better-sqlite' 2>/dev/null; then
+# Check source files for SQLite imports (exclude test files that verify absence)
+if find "$PROJECT_ROOT/src" -name '*.ts' -o -name '*.tsx' | grep -v '/tests/' | xargs grep -l -E 'sqlite|libsql|better-sqlite' 2>/dev/null; then
   echo "BLOCKED: SQLite references found in source files"
   ERRORS=$((ERRORS + 1))
 fi

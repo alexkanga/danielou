@@ -97,7 +97,7 @@ export const level = pgTable('level', {
 
 export const classroom = pgTable('classroom', {
   id: uuid('id').primaryKey().defaultRandom(),
-  levelId: uuid('level_id').notNull().references(() => level.id, { onDelete: 'cascade' }),
+  levelId: uuid('level_id').notNull().references(() => level.id, { onDelete: 'restrict' }),
   academicYearId: uuid('academic_year_id').notNull().references(() => academicYear.id),
   name: text('name').notNull(),
   ...auditColumns,
@@ -223,7 +223,7 @@ export const assessmentType = pgTable('assessment_type', {
 
 export const assessment = pgTable('assessment', {
   id: uuid('id').primaryKey().defaultRandom(),
-  classroomId: uuid('classroom_id').notNull().references(() => classroom.id, { onDelete: 'cascade' }),
+  classroomId: uuid('classroom_id').notNull().references(() => classroom.id, { onDelete: 'restrict' }),
   subjectId: uuid('subject_id').notNull().references(() => subject.id),
   academicPeriodId: uuid('academic_period_id').notNull().references(() => academicPeriod.id),
   assessmentTypeId: uuid('assessment_type_id').references(() => assessmentType.id),
@@ -246,7 +246,7 @@ export const assessment = pgTable('assessment', {
 export const grade = pgTable('grade', {
   id: uuid('id').primaryKey().defaultRandom(),
   assessmentId: uuid('assessment_id').notNull().references(() => assessment.id, { onDelete: 'cascade' }),
-  studentId: uuid('student_id').notNull().references(() => student.id, { onDelete: 'cascade' }),
+  studentId: uuid('student_id').notNull().references(() => student.id, { onDelete: 'restrict' }),
   rawValue: numeric('raw_value', { precision: 8, scale: 4 }),
   originalScale: integer('original_scale'),
   status: gradeStatusEnum('status').notNull().default('pending'),

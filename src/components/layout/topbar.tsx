@@ -25,7 +25,6 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
     isGhost,
     isSuperAdmin,
     schoolRoleLabel,
-    platformRoleLabel,
   } = useNavigation();
 
   const initials = user.name
