@@ -52,5 +52,8 @@ drizzle/meta/
 # IDE
 .idea/
 .vscode/
+*.swo
 *.swp
-*.swodata/private/
+
+# S1 import — private student data (NEVER commit)
+data/private/
