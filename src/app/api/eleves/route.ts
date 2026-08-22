@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eq, like, sql, and, asc, or } from 'drizzle-orm';
+import { eq, and, sql, or, asc } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { student, enrollment, classroom, level } from '@/lib/db/schema';
+import { student, enrollment, classroom, level, classroomAssignment } from '@/lib/db/schema';
 import { requireSession } from '@/lib/session';
 import { createStudentSchema } from '@/lib/validations/scolarite';
-import { parsePagination, computePagination } from '@/lib/data-access/pagination';
+import { computePagination } from '@/lib/data-access/pagination';
 import { getSchoolId, handleApiError } from '@/lib/data-access/get-school';
 import type { PaginatedResult } from '@/lib/data-access/pagination';
 import type { Student } from '@/lib/db/schema';
 
+// V2 type — classroom info comes from classroom_assignment, not enrollment.classroom_id
 type StudentWithEnrollment = Student & {
   enrollment: { classroomId: string; classroomName: string; levelName: string; academicYearId: string } | null;
 };
@@ -21,15 +22,15 @@ export async function GET(request: NextRequest) {
     await requireSession();
     const schoolId = await getSchoolId();
 
-    const { page, limit, search } = parsePagination(request.nextUrl.searchParams);
+    const { page, limit, search, academicYearId } = parsePaginationWithYear(request.nextUrl.searchParams);
 
     const conditions = [
       eq(student.schoolId, schoolId),
       search
         ? or(
-            like(student.firstName, `%${search}%`),
-            like(student.lastName, `%${search}%`),
-            like(student.matricule, `%${search}%`),
+            sql`student.first_name ILIKE ${`%${search}%`}`,
+            sql`student.last_name ILIKE ${`%${search}%`}`,
+            sql`student.matricule ILIKE ${`%${search}%`}`,
           )
         : undefined,
     ];
@@ -40,6 +41,7 @@ export async function GET(request: NextRequest) {
       .from(student)
       .where(whereClause);
 
+    // V2: JOIN through classroom_assignment instead of enrollment.classroom_id
     const rows = await db
       .select({
         id: student.id,
@@ -51,7 +53,7 @@ export async function GET(request: NextRequest) {
         gender: student.gender,
         createdAt: student.createdAt,
         updatedAt: student.updatedAt,
-        classroomId: enrollment.classroomId,
+        classroomId: classroom.id,
         classroomName: classroom.name,
         levelName: level.name,
         enrollmentYearId: enrollment.academicYearId,
@@ -59,9 +61,20 @@ export async function GET(request: NextRequest) {
       .from(student)
       .leftJoin(
         enrollment,
-        and(eq(enrollment.studentId, student.id), eq(enrollment.status, 'active')),
+        and(
+          eq(enrollment.studentId, student.id),
+          eq(enrollment.status, 'active'),
+          academicYearId ? eq(enrollment.academicYearId, academicYearId) : undefined,
+        ),
       )
-      .leftJoin(classroom, eq(enrollment.classroomId, classroom.id))
+      .leftJoin(
+        classroomAssignment,
+        and(
+          eq(classroomAssignment.enrollmentId, enrollment.id),
+          eq(classroomAssignment.status, 'active'),
+        ),
+      )
+      .leftJoin(classroom, eq(classroomAssignment.classroomId, classroom.id))
       .leftJoin(level, eq(classroom.levelId, level.id))
       .where(whereClause)
       .orderBy(asc(student.lastName), asc(student.firstName))
@@ -114,11 +127,11 @@ export async function POST(request: NextRequest) {
 
     // Auto-generate matricule: DAN-YYYY-NNNN
     const year = new Date().getFullYear();
-    const prefix = `DAN-${year}-`;
+    const prefix = 'DAN-' + year + '-';
     const [maxRow] = await db
       .select({ max: sql<string>`MAX(matricule)` })
       .from(student)
-      .where(like(student.matricule, `${prefix}%`));
+      .where(sql`student.matricule LIKE ${prefix + '%'}`);
 
     let seq = 1;
     if (maxRow?.max) {
@@ -126,9 +139,12 @@ export async function POST(request: NextRequest) {
       const num = parseInt(numStr, 10);
       if (!isNaN(num)) seq = num + 1;
     }
-    const matricule = `${prefix}${String(seq).padStart(4, '0')}`;
+    const matricule = prefix + String(seq).padStart(4, '0');
+
+    const today = new Date().toISOString().split('T')[0];
 
     const [created] = await db.transaction(async (tx) => {
+      // 1. Create student
       const [s] = await tx
         .insert(student)
         .values({
@@ -141,12 +157,29 @@ export async function POST(request: NextRequest) {
         })
         .returning();
 
-      await tx.insert(enrollment).values({
-        studentId: s.id,
-        classroomId,
-        academicYearId,
-        status: 'active',
-      });
+      // 2. Create enrollment (V2: no classroom_id on enrollment)
+      const [e] = await tx
+        .insert(enrollment)
+        .values({
+          schoolId,
+          studentId: s.id,
+          academicYearId,
+          status: 'active',
+          enrolledAt: today,
+        })
+        .returning();
+
+      // 3. Create classroom assignment (V2: classroom is here now)
+      if (classroomId) {
+        await tx
+          .insert(classroomAssignment)
+          .values({
+            enrollmentId: e.id,
+            classroomId,
+            startDate: today,
+            status: 'active',
+          });
+      }
 
       return [s];
     });
@@ -155,4 +188,13 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return handleApiError(error, 'POST /api/eleves') as NextResponse;
   }
+}
+
+// Helper
+function parsePaginationWithYear(params: URLSearchParams) {
+  const page = Math.max(1, parseInt(params.get('page') || '1', 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(params.get('limit') || '25', 10) || 25));
+  const search = params.get('search') || undefined;
+  const academicYearId = params.get('academicYearId') || undefined;
+  return { page, limit, search, academicYearId };
 }

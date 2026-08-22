@@ -54,6 +54,7 @@
     "eslint-plugin-drizzle": "^0.2.3",
     "jsdom": "^30.0.1",
     "pg": "^8.23.0",
+    "postgres": "^3.4.9",
     "tailwindcss": "^4",
     "tsx": "^4.23.12",
     "typescript": "^5",

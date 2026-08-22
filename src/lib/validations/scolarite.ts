@@ -40,6 +40,9 @@ export const updateClassroomSchema = createClassroomSchema.partial();
 export type UpdateClassroomInput = z.infer<typeof updateClassroomSchema>;
 
 // ===== ÉLÈVES =====
+// V2: Student creation keeps classroomId + academicYearId for convenience
+// (creates enrollment + classroom_assignment in one call)
+// But they are optional — enrollment can be created separately
 export const createStudentSchema = z.object({
   firstName: z.string().min(1, 'Le prénom est requis').max(100),
   lastName: z.string().min(1, 'Le nom est requis').max(100),
@@ -52,3 +55,24 @@ export type CreateStudentInput = z.infer<typeof createStudentSchema>;
 
 export const updateStudentSchema = createStudentSchema.omit({ classroomId: true, academicYearId: true }).partial();
 export type UpdateStudentInput = z.infer<typeof updateStudentSchema>;
+
+// ===== AFFECTATIONS (M2) =====
+export const createAssignmentSchema = z.object({
+  enrollmentId: z.string().uuid('L\'inscription est requise'),
+  classroomId: z.string().uuid('La classe est requise'),
+  startDate: z.string().min(1, 'La date de début est requise'),
+});
+export type CreateAssignmentInput = z.infer<typeof createAssignmentSchema>;
+
+export const transferSchema = z.object({
+  enrollmentId: z.string().uuid('L\'inscription est requise'),
+  newClassroomId: z.string().uuid('La nouvelle classe est requise'),
+  effectiveDate: z.string().min(1, 'La date d\'effet est requise'),
+});
+export type TransferInput = z.infer<typeof transferSchema>;
+
+export const closeAssignmentSchema = z.object({
+  endDate: z.string().min(1, 'La date de fin est requise'),
+  newStatus: z.enum(['completed', 'withdrawn', 'cancelled']),
+});
+export type CloseAssignmentInput = z.infer<typeof closeAssignmentSchema>;

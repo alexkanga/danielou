@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq, and } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { student, enrollment, classroom, level } from '@/lib/db/schema';
+import { student, enrollment, classroom, level, classroomAssignment } from '@/lib/db/schema';
 import { requireSession } from '@/lib/session';
 import { updateStudentSchema } from '@/lib/validations/scolarite';
 import { handleApiError } from '@/lib/data-access/get-school';
 import type { Student } from '@/lib/db/schema';
+
+// V2 type
 
 type StudentWithEnrollment = Student & {
   enrollment: { classroomId: string; classroomName: string; levelName: string; academicYearId: string } | null;
@@ -20,6 +22,7 @@ export async function GET(
     await requireSession();
     const { id } = await params;
 
+    // V2: JOIN through classroom_assignment
     const rows = await db
       .select({
         id: student.id,
@@ -31,7 +34,7 @@ export async function GET(
         gender: student.gender,
         createdAt: student.createdAt,
         updatedAt: student.updatedAt,
-        classroomId: enrollment.classroomId,
+        classroomId: classroom.id,
         classroomName: classroom.name,
         levelName: level.name,
         enrollmentYearId: enrollment.academicYearId,
@@ -41,7 +44,14 @@ export async function GET(
         enrollment,
         and(eq(enrollment.studentId, student.id), eq(enrollment.status, 'active')),
       )
-      .leftJoin(classroom, eq(enrollment.classroomId, classroom.id))
+      .leftJoin(
+        classroomAssignment,
+        and(
+          eq(classroomAssignment.enrollmentId, enrollment.id),
+          eq(classroomAssignment.status, 'active'),
+        ),
+      )
+      .leftJoin(classroom, eq(classroomAssignment.classroomId, classroom.id))
       .leftJoin(level, eq(classroom.levelId, level.id))
       .where(eq(student.id, id))
       .limit(1);
@@ -127,7 +137,21 @@ export async function DELETE(
       return NextResponse.json({ error: 'Élève non trouvé.' }, { status: 404 });
     }
 
-    // Cascade delete handles enrollments
+    // V2: enrollment → student FK is now RESTRICT.
+    // Must check for active enrollments first.
+    const [activeEnrollment] = await db
+      .select({ id: enrollment.id })
+      .from(enrollment)
+      .where(eq(enrollment.studentId, id))
+      .limit(1);
+
+    if (activeEnrollment) {
+      return NextResponse.json(
+        { error: 'Cet élève a des inscriptions et ne peut pas être supprimé directement. Annulez d\'abord les inscriptions.' },
+        { status: 409 },
+      );
+    }
+
     await db.delete(student).where(eq(student.id, id));
     return new NextResponse(null, { status: 204 });
   } catch (error) {
