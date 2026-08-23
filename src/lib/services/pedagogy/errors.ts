@@ -151,6 +151,15 @@ export function pedagogyErrorToResponse(error: unknown): Response {
 
   // Re-use the existing handleApiError for non-domain errors
   // (auth, DB, etc.)
+  // M4 errors
+  const err = error as Error;
+  if (err.name === 'AssessmentLifecycleError' || err.name === 'AssessmentImmutabilityError') {
+    return Response.json({ error: err.message, code: 'ASSESSMENT_LIFECYCLE' }, { status: 409 });
+  }
+  if (err.name === 'GradeEligibilityError') {
+    return Response.json({ error: err.message, code: 'GRADE_ELIGIBILITY' }, { status: 422 });
+  }
+
   if (error instanceof Error) {
     if (error.message === 'UNAUTHORIZED') {
       return Response.json({ error: 'Non autorisé.' }, { status: 401 });

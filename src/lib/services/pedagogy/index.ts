@@ -76,3 +76,27 @@ export {
   updateConfigComponent,
   deleteConfigComponent,
 } from './config-component.service';
+
+// ─────────────────────────────────────────────
+// M4 Assessment / Grade services
+// ─────────────────────────────────────────────
+
+export {
+  listAssessments,
+  getAssessmentById,
+  createAssessment,
+  updateAssessment,
+  openAssessment,
+  closeAssessment,
+  cancelAssessment,
+  getEligibleStudents,
+  AssessmentLifecycleError,
+  AssessmentImmutabilityError,
+  GradeEligibilityError,
+} from './assessment.service';
+
+export {
+  setGrade,
+  bulkSetGrades,
+  listGradesByAssessment,
+} from './grade.service';

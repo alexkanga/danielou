@@ -10,6 +10,7 @@ export const periodStatusEnum = pgEnum('period_status', ['draft', 'open', 'close
 export const enrollmentStatusEnum = pgEnum('enrollment_status', ['active', 'completed', 'transferred_out', 'withdrawn', 'cancelled']);
 export const classroomAssignmentStatusEnum = pgEnum('classroom_assignment_status', ['active', 'transferred', 'completed', 'withdrawn', 'cancelled']);
 export const gradeStatusEnum = pgEnum('grade_status', ['graded', 'absent_excused', 'absent_unexcused', 'exempt', 'not_evaluated', 'pending']);
+export const assessmentStatusEnum = pgEnum('assessment_status', ['draft', 'open', 'closed', 'cancelled']);
 export const reportCardStatusEnum = pgEnum('report_card_status', ['draft', 'ready', 'validated', 'published']);
 export const configStatusEnum = pgEnum('config_status', ['draft', 'active', 'archived']);
 export const calculationPolicyEnum = pgEnum('calculation_policy', ['simple_average', 'weighted_average', 'single_grade']);
@@ -239,16 +240,25 @@ export const assessment = pgTable('assessment', {
   subjectId: uuid('subject_id').notNull().references(() => subject.id),
   academicPeriodId: uuid('academic_period_id').notNull().references(() => academicPeriod.id),
   assessmentTypeId: uuid('assessment_type_id').references(() => assessmentType.id),
+  configSubjectId: uuid('config_subject_id').references(() => configSubject.id, { onDelete: 'set null' }),
+  configComponentId: uuid('config_component_id').references(() => configComponent.id, { onDelete: 'set null' }),
   title: text('title').notNull(),
   scale: integer('scale').notNull().default(20),
   coefficient: numeric('coefficient', { precision: 6, scale: 2 }).notNull().default('1'),
+  status: assessmentStatusEnum('status').notNull().default('draft'),
   date: date('assessment_date').notNull(),
   description: text('description'),
+  createdBy: uuid('created_by'),
+  updatedBy: uuid('updated_by'),
   ...auditColumns,
 }, (table) => [
   index('as_classroom_idx').on(table.classroomId),
   index('as_subject_idx').on(table.subjectId),
   index('as_period_idx').on(table.academicPeriodId),
+  index('as_status_idx').on(table.status),
+  index('as_config_subject_idx').on(table.configSubjectId),
+  check('assessment_scale_check', sql`\`scale\` >= 1`),
+  check('assessment_coefficient_check', sql`\`coefficient\` > 0`),
 ]);
 
 // ==============================================
@@ -258,15 +268,17 @@ export const assessment = pgTable('assessment', {
 export const grade = pgTable('grade', {
   id: uuid('id').primaryKey().defaultRandom(),
   assessmentId: uuid('assessment_id').notNull().references(() => assessment.id, { onDelete: 'cascade' }),
-  studentId: uuid('student_id').notNull().references(() => student.id, { onDelete: 'restrict' }),
+  enrollmentId: uuid('enrollment_id').notNull().references(() => enrollment.id, { onDelete: 'restrict' }),
   rawValue: numeric('raw_value', { precision: 8, scale: 4 }),
-  originalScale: integer('original_scale'),
   status: gradeStatusEnum('status').notNull().default('pending'),
   comment: text('comment'),
+  createdBy: uuid('created_by'),
+  updatedBy: uuid('updated_by'),
   ...auditColumns,
 }, (table) => [
-  uniqueIndex('ug_assessment_student').on(table.assessmentId, table.studentId),
-  index('gr_student_idx').on(table.studentId),
+  uniqueIndex('ug_assessment_enrollment').on(table.assessmentId, table.enrollmentId),
+  index('gr_enrollment_idx').on(table.enrollmentId),
+  check('grade_raw_value_check', sql`raw_value IS NULL OR raw_value >= 0`),
 ]);
 
 // ==============================================

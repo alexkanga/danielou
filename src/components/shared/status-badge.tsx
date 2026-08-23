@@ -15,6 +15,8 @@ const statusMap: Record<string, StatusConfig> = {
   draft: { label: 'Brouillon', className: 'bg-muted text-muted-foreground' },
   open: { label: 'Ouverte', className: 'bg-success-light text-success' },
   archived: { label: 'Archivée', className: 'bg-muted text-muted-foreground' },
+  // Assessment
+  cancelled: { label: 'Annulée', className: 'bg-danger-light text-danger' },
   // Enrollment
   transferred: { label: 'Transféré', className: 'bg-warning-light text-warning' },
   withdrawn: { label: 'Retiré', className: 'bg-danger-light text-danger' },

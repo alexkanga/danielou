@@ -177,3 +177,69 @@ export const updateConfigComponentSchema = z.object({
   assessmentAggregation: z.enum(['simple_average', 'weighted_average', 'single_grade']).optional(),
 });
 export type UpdateConfigComponentInput = z.infer<typeof updateConfigComponentSchema>;
+
+// ─────────────────────────────────────────────
+// Assessment (M4)
+// ─────────────────────────────────────────────
+
+export const createAssessmentSchema = z.object({
+  classroomId: z.string().uuid('La classe est requise'),
+  subjectId: z.string().uuid('La matière est requise'),
+  academicPeriodId: z.string().uuid('La période est requise'),
+  assessmentTypeId: z.string().uuid().optional().nullable(),
+  configSubjectId: z.string().uuid().optional().nullable(),
+  configComponentId: z.string().uuid().optional().nullable(),
+  title: z.string().min(1, 'Le titre est requis').max(200, 'Le titre ne peut pas dépasser 200 caractères'),
+  scale: z.coerce.number().int().min(1, "L'échelle doit être ≥ 1").max(100, "L'échelle ne peut pas dépasser 100").default(20),
+  coefficient: z.coerce.number().positive('Le coefficient doit être > 0').max(99.99).default(1),
+  date: z.string().min(1, 'La date est requise'),
+  description: z.string().max(1000).optional().nullable(),
+});
+export type CreateAssessmentInput = z.infer<typeof createAssessmentSchema>;
+
+export const updateAssessmentSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().max(1000).optional().nullable(),
+  date: z.string().min(1).optional(),
+  assessmentTypeId: z.string().uuid().optional().nullable(),
+}).strict();
+export type UpdateAssessmentInput = z.infer<typeof updateAssessmentSchema>;
+
+// ─────────────────────────────────────────────
+// Grade (M4)
+// ─────────────────────────────────────────────
+
+export const VALID_GRADE_STATUSES = ['graded', 'absent_excused', 'absent_unexcused', 'exempt', 'not_evaluated', 'pending'] as const;
+export const NUMERIC_STATUSES = new Set<string>(['graded']);
+export const NON_GRADE_STATUSES = new Set<string>(['absent_excused', 'absent_unexcused', 'exempt', 'not_evaluated']);
+
+export const setGradeSchema = z.object({
+  enrollmentId: z.string().uuid("L'inscription est requise"),
+  rawValue: z.coerce.number().min(0, 'La note doit être ≥ 0').max(100, 'La note ne peut pas dépasser 100').optional().nullable(),
+  status: z.enum(VALID_GRADE_STATUSES).default('pending'),
+  comment: z.string().max(500).optional().nullable(),
+}).refine(
+  data => {
+    // If status is graded, rawValue must be present and non-null
+    if (data.status === 'graded' && (data.rawValue === null || data.rawValue === undefined)) {
+      return false;
+    }
+    return true;
+  },
+  { message: 'Une note numérique est requise pour le statut « noté »', path: ['rawValue'] }
+).refine(
+  data => {
+    // Non-grade statuses must NOT have a numeric value
+    if (NON_GRADE_STATUSES.has(data.status) && data.rawValue !== null && data.rawValue !== undefined) {
+      return false;
+    }
+    return true;
+  },
+  { message: 'Les statuts d\'absence/exemption ne peuvent pas avoir de valeur numérique', path: ['rawValue'] }
+);
+export type SetGradeInput = z.infer<typeof setGradeSchema>;
+
+export const bulkSetGradesSchema = z.object({
+  grades: z.array(setGradeSchema).min(1, 'Au moins une note est requise').max(100, 'Maximum 100 notes par envoi'),
+});
+export type BulkSetGradesInput = z.infer<typeof bulkSetGradesSchema>;
