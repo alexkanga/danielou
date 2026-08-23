@@ -3,13 +3,11 @@
 /**
  * R-V2-M1-H2 — Login Server Action (Always-Available Fantomas)
  * 
- * Flux (§4):
- * 1. Si l'identifiant correspond à Fantomas → Ghost Auth (sans DB, sans Better Auth)
- * 2. Sinon → Better Auth (username/password puis email/password)
+ * Flux:
+ * 1. Si l'identifiant correspond a Fantomas -> Ghost Auth (sans DB, sans Better Auth)
+ * 2. Sinon -> Better Auth (username/password puis email/password)
  * 
- * §4 CRITICAL: No database call is allowed before Fantomas authentication succeeds.
- * §25: Ordinary user failure → NEVER Ghost fallback.
- * §37: Cookie set directly from Server Action (no internal fetch).
+ * BA 1.7.1 in production uses __Secure- prefix on session cookie.
  */
 
 import { cookies } from 'next/headers';
@@ -19,6 +17,10 @@ import { getGhostConfig } from '@/lib/ghost-config';
 export type LoginResult =
   | { success: true; user: { id: string; email: string; name: string; platformRole: string }; source: string }
   | { success: false; error: string };
+
+const BA_SESSION_TOKEN_NAME = process.env.NODE_ENV === 'production'
+  ? '__Secure-better-auth.session_token'
+  : 'better-auth.session_token';
 
 export async function loginAction(
   _prevState: LoginResult | null,
@@ -31,9 +33,7 @@ export async function loginAction(
     return { success: false, error: 'Veuillez remplir tous les champs.' };
   }
 
-  // ─────────────────────────────────────────────
-  // 1. Ghost Auth — Fantomas is ALWAYS available (§4)
-  // ─────────────────────────────────────────────
+  // Ghost Auth
   const ghostConfig = getGhostConfig();
   if (login.toLowerCase() === ghostConfig.username.toLowerCase()) {
     if (validateGhostCredentials(login, password)) {
@@ -60,29 +60,24 @@ export async function loginAction(
     return { success: false, error: 'Identifiants invalides.' };
   }
 
-  // ─────────────────────────────────────────────
-  // 2. Better Auth — ordinary users (§5, §25)
-  // ─────────────────────────────────────────────
+  // Better Auth — ordinary users
   try {
     const { getAuth } = await import('@/lib/auth');
     const auth = getAuth();
 
-    // Try username sign-in first (requires username plugin)
+    // Try username sign-in first
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result: any = await auth.api.signInUsername({
         body: { username: login, password },
       });
       if (result?.token) {
-        // BA 1.7.1: server-side API doesn't automatically set cookies
-        // in server action context. Set the session cookie manually.
         const cookieStore = await cookies();
-        cookieStore.set('better-auth.session_token', result.token, {
+        cookieStore.set(BA_SESSION_TOKEN_NAME, result.token, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',
           path: '/',
-          maxAge: 60 * 60 * 24 * 7, // 7 days
+          maxAge: 60 * 60 * 24 * 7,
         });
         const u = result.user as Record<string, unknown>;
         const isSuperAdmin = Boolean(u.isSuperAdmin || u.platformRole === 'super_admin');
@@ -103,13 +98,12 @@ export async function loginAction(
 
     // Try email sign-in
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result: any = await auth.api.signInEmail({
         body: { email: login, password },
       });
       if (result?.token) {
         const cookieStore = await cookies();
-        cookieStore.set('better-auth.session_token', result.token, {
+        cookieStore.set(BA_SESSION_TOKEN_NAME, result.token, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',
@@ -135,6 +129,6 @@ export async function loginAction(
 
     return { success: false, error: 'Identifiants invalides.' };
   } catch {
-    return { success: false, error: 'Service indisponible. Vérifiez la connexion.' };
+    return { success: false, error: 'Service indisponible.' };
   }
 }
