@@ -61,3 +61,42 @@ Stage Summary:
 - M3 FUNCTIONAL: PASS
 - M4 FUNCTIONAL: PASS
 - FUNCTIONAL CLOSURE: PASS
+
+---
+Task ID: pre-m5-functional-closure-v2
+Agent: Main
+Task: Pre-M5 Functional Workflow Closure — complete Users CRUD, re-check all pages
+
+Work Log:
+- Recovered project state from CONTINUITY.md, worklog, git history
+- Confirmed navigation inventory: 17 REQUIRED_NOW menus, 8 FUTURE_M5 hidden
+- Identified Users page as READ-ONLY — the only incomplete REQUIRED_NOW feature
+- Created src/lib/services/user-management.ts with createUser, updateUser, toggleUserActive
+- Created POST /api/users (create user with BA hashPassword + direct DB insert)
+- Created PATCH /api/users/[id] (edit fields + toggle active)
+- Server-side RBAC: assertCanManageUsers (ghost/super_admin only)
+- Platform SUPER_ADMIN cannot be assigned through user workflow
+- System accounts (Fantomas, super_admin) protected from modification
+- Updated Utilisateurs page with create dialog, edit dialog, activate/deactivate buttons
+- Audit logging for all user mutations via logPedagogyAudit
+- Re-checked Inscriptions: LIST PASS
+- Re-checked Affectations: LIST PASS
+- Re-checked Journal d'audit: LIST + filter PASS
+- Re-checked Recovery: renders, Fantomas status visible
+- Re-checked DB Health: renders, DB AVAILABLE, GHOST AVAILABLE
+- All quality gates PASS: check:sqlite, typecheck(0), lint(0 errors), test(324 pass), build, secret scan(87)
+- Production smoke: 17/17 REQUIRED routes 200, 0 404, 0 500
+- User management workflow: CREATE/EDIT/DEACTIVATE/ACTIVATE/ROLE ASSIGNMENT all PASS
+- 8 FUTURE_M5 routes correctly return 404
+- Updated docs/CONTINUITY.md
+- Committed 5 commits, pushed to main
+
+Stage Summary:
+- Users CRUD workflow: COMPLETE
+- All 17 REQUIRED_NOW menus: FUNCTIONAL
+- M1 FUNCTIONAL: PASS
+- M2 FUNCTIONAL: PASS
+- M3 FUNCTIONAL: PASS
+- M4 FUNCTIONAL: PASS
+- PRE-M5 FUNCTIONAL CLOSURE: PASS
+- M5 ELIGIBILITY: GO
