@@ -541,5 +541,7 @@ export type ConfigSubject = typeof configSubject.$inferSelect;
 export type NewConfigSubject = typeof configSubject.$inferInsert;
 export type ConfigComponent = typeof configComponent.$inferSelect;
 export type NewConfigComponent = typeof configComponent.$inferInsert;
+export type AssessmentType = typeof assessmentType.$inferSelect;
+export type NewAssessmentType = typeof assessmentType.$inferInsert;
 export type TeacherAssignment = typeof teacherAssignment.$inferSelect;
 export type NewTeacherAssignment = typeof teacherAssignment.$inferInsert;
