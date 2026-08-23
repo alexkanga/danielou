@@ -101,7 +101,8 @@ export async function createUser(
   input: CreateUserInput,
   session: AppSessionV2,
   schoolId: string,
-  requestHeaders?: Headers,
+  // requestHeaders kept for future BA API integration if needed
+  _requestHeaders?: Headers,
 ): Promise<UserManagementResult> {
   assertCanManageUsers(session);
 
