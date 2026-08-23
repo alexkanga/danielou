@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-23
 **HEAD:** M3 branch (v2/m3-pedagogy-configuration)
-**Phase:** M3 — Phase C reconciled, awaiting Phase D GO
+**Phase:** M3 — COMPLETE through Phase J, awaiting Production GO
 
 ## Project State
 
@@ -11,6 +11,7 @@
 - Package manager: pnpm
 - All PRE-M3 release gates: PASS
 - DB PROD: 69 students, 24 updated_at triggers, 3 FK RESTRICT policies, 0 data integrity issues
+- DB M3 ADDITIONS: 17 CHECKs, 4 indexes, 1 enum, 7 columns, 1 FK, 1 FK policy change
 
 ## What Was Accomplished
 
@@ -27,11 +28,17 @@
 | M3 Phase B Current-State Audit | PASS — 6 pedagogy tables, 0 legacy, 3 moderate/4 low findings, GO for Phase C |
 | M3 Phase C Target Model & Invariants | PASS — 25/25 invariants frozen, 33 Phase D DB deltas + 1 service-only, 0 ambiguities |
 | M3 Phase C Targeted Reconciliation | PASS — C-R01 REJECT_EMPTY, C-R02 3 CONTRACT_LATER, C-R03 not created, Phase I scope=3 DROPs |
+| M3 Phase D EXPAND | PASS — migration 0005 (33 DB deltas), schema updated, PROD applied |
+| M3 Phase E Data Migration | PASS — NEED = NONE |
+| M3 Phase F Services | PASS — 6 services, 14 API routes, RBAC, audit, clone, activate |
+| M3 Phase G UI | PASS — 5 pages, DRAFT/ACTIVE/ARCHIVED UX, French labels |
+| M3 Phase H Switch | PASS — 0 legacy reads/writes for CONTRACT columns |
+| M3 Phase I CONTRACT | PASS — migration 0006 (3 DROPs), PROD applied |
+| M3 Phase J Regression | PASS — typecheck 0, lint 0, 279 tests, build PASS |
 
 ## Pending / Next
 
-- Phase D — EXPAND (migration 0005, 33 DB delta objects + 1 service-only delta) — BLOCKED until explicit owner GO
-- Phase I CONTRACT — 3 DROP COLUMN (subject_component.coefficient, .scale, .is_required) + verification gate
+- PRODUCTION RELEASE — BLOCKED until owner authorization
 - Tags `v2-pre-m3-final-pass` and `v2-pre-m3-pass` exist on remote
 - M3 branch: `v2/m3-pedagogy-configuration`
 
