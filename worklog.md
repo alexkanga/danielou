@@ -29,3 +29,35 @@ Stage Summary:
 - TAG: v2-m4-assessments-grades-pass at 5ff9f52
 - PRODUCTION: LIVE
 - M5 ELIGIBILITY: GO
+
+---
+Task ID: m1-m4-functional-closure
+Agent: Main
+Task: M1-M4 Functional Closure — build missing pages, hide future M5 routes
+
+Work Log:
+- Built navigation inventory from sidebar code (26 routes total)
+- Tested all routes on Production authenticated as Fantomas
+- Found 6 REQUIRED_NOW routes returning 404: inscriptions, affectations, system/recovery, system/db-health, admin/utilisateurs, admin/journal-audit
+- Found 8 future M5/placeholder routes in sidebar with no pages: resultats, bulletins/*, statistiques, admin/roles, admin/configuration
+- Created 6 missing pages: inscriptions, affectations, system/recovery, system/db-health, admin/utilisateurs, admin/journal-audit
+- Created 3 missing API routes: /api/inscriptions, /api/audit, /api/users
+- Fixed navigation.ts to hide 8 future routes (commented out with FUTURE_M5 labels)
+- Fixed affectations API to return totalItems (matching PaginatedResult type)
+- Fixed all pages to match PaginatedResult type (totalItems not total)
+- Fixed lint errors (set-state-in-effect, unescaped entities)
+- All quality gates PASS: typecheck 0, lint 0 errors, 322 tests PASS, build PASS, no SQLite
+- GitHub CI PASS on 52273fb
+- Vercel deployed at 52273fb
+- Production smoke: 17/17 REQUIRED routes 200 OK, 0 404, 0 500
+- 8 future M5 routes: 404 + NOT in sidebar
+
+Stage Summary:
+- 6 pages added (inscriptions, affectations, recovery, db-health, utilisateurs, journal-audit)
+- 3 APIs added (inscriptions, audit, users)
+- 8 future M5 routes hidden from sidebar
+- M1 FUNCTIONAL: PASS
+- M2 FUNCTIONAL: PASS
+- M3 FUNCTIONAL: PASS
+- M4 FUNCTIONAL: PASS
+- FUNCTIONAL CLOSURE: PASS
