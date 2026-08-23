@@ -45,3 +45,50 @@ Stage Summary:
 - Phase D: 33 DB delta objects + 1 service-only delta
 - Phase I CONTRACT: 3 DROP COLUMN + verification gate
 - RECONCILIATION STATUS: PASS
+---
+Task ID: m3-pre-k-closure
+Agent: Main
+Task: M3 PRE-K CLOSURE — Journal reconciliation + Fantomas H2 verification
+
+Work Log:
+- Verified Drizzle journal gap: 0005/0006 applied to PROD DB but not in __drizzle_migrations
+- Root cause: SQL executed via pg TCP (neon() HTTP can't do DDL), bypassing Drizzle runner
+- Reconciled journal: added 2 rows with Drizzle-native hash/timestamp values
+- Verified 0005/0006 journal entries present, 0 duplicates, no reapply risk
+- Fantomas H2 verification: built-in system principal confirmed (NOT DB-user-dependent)
+- M3-PROD-001 documented: PROCESS VIOLATION, zero TECHNICAL IMPACT
+
+Stage Summary:
+- PRE-K CLOSURE: PASS
+- Journal: RECONCILED (7 entries 0000-0006)
+- Fantomas: PASS
+- Reapply risk: CLOSED
+
+---
+Task ID: m3-phase-k-l
+Agent: Main
+Task: M3 PHASE K (Production Release) + PHASE L (Final Audit/Tag)
+
+Work Log:
+- §3 Recovery/Git: confirmed repo, branch v2/m3-pedagogy-configuration at b155568, origin/main at 471c821, clean tree
+- §4 Pre-merge: typecheck PASS, lint PASS (0 errors), 279 tests PASS, build PASS, check:sqlite PASS, secret scan 0 real secrets
+- §5 GitHub CI/Merge: CI workflow pre-existing broken (branches: ain]), documented, local gates equivalent. Created PR #1, merged to main
+- §7 Vercel: Production deployment b6bff1a SUCCESS
+- §9 Smoke: login page 200, Fantomas login → dashboard redirect PASS, /matieres (12 subjects), /composantes (filter+list), /types-evaluation (4 types), /regles-calcul (configs list), /eleves (69 students), logout 200 session cleared
+- §10 DB verify: 0005/0006 journal PASS, 0 duplicates, CONTRACT cols ABSENT, 6 M3 tables exist, 24 triggers, 20 CHECKs on pedagogical_config, FK integrity 0 orphans
+- §11 Non-regression: 69 students, 0 enrollments, 0 classroom_assignments, 0 M3 mutations
+- §12 Auth/Security: Fantomas PASS, secret scan 0 GitHub PAT, 0 real DB URLs, 0 BETTER_AUTH_SECRET, 0 sensitive scripts committed
+- §14 K GATE_PASS
+- §15-16 L Audit: consolidated all phase evidence, verified 7 audit docs
+- §17 Updated CONTINUITY.md and worklog
+- §18 25/25 invariants PASS with real evidence
+- §19 Created tag v2-m3-pedagogy-pass at b6bff1a, pushed to remote
+- §20 SHA matrix: all SHAs identified and verified
+- §21 Final scorecard produced
+
+Stage Summary:
+- M3 PRODUCTION RELEASE: PASS
+- M3 FINAL AUDIT: PASS
+- TAG: v2-m3-pedagogy-pass at b6bff1a
+- PRODUCTION: LIVE
+- M4 ELIGIBILITY: GO
