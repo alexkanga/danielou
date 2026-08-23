@@ -1,8 +1,8 @@
 # Daniélou — Agent Continuity Checkpoint
 
 **Date:** 2026-08-24
-**HEAD:** main (5ff9f52)
-**Phase:** M4 — PRODUCTION RELEASE COMPLETE
+**HEAD:** main (bcf1b24)
+**Phase:** PRE-M5 FUNCTIONAL WORKFLOW CLOSURE COMPLETE
 
 ## Project State
 
@@ -10,9 +10,9 @@
 - Stack: Next.js 16 + TypeScript + Tailwind + Drizzle ORM + Neon PostgreSQL + Better Auth
 - Package manager: pnpm
 - DB PROD: 69 students, 24 triggers, 0 data integrity issues
-- DB M4 ADDITIONS: assessment_status enum, 6 assessment columns, 3 grade columns, 1 grade FK, 1 grade CHECK, 2 indexes; CONTRACT dropped 2 grade columns, 2 indexes, 1 unique, 1 FK
-- Production deployment: LIVE (Vercel) at SHA 5ff9f52
+- Production deployment: LIVE (Vercel)
 - Drizzle migration journal: 9 entries (0000-0008), reconciled
+- Tests: 324 pass, 3 skip
 
 ## What Was Accomplished
 
@@ -23,49 +23,51 @@
 | M2 Data (PostgreSQL migration, 69 students) | DONE |
 | M3 Pedagogy Configuration | DONE — tagged v2-m3-pedagogy-pass |
 | M4 Assessments / Grades | DONE — tagged v2-m4-assessments-grades-pass |
+| Pre-M5 Functional Closure | DONE |
 
-## M4 Production Release
+## Pre-M5 Functional Workflow Closure
 
-- **M4_BASELINE_SHA:** e51d9b86
-- **M4_BRANCH_FINAL_SHA:** 0e09bff
-- **M4_MAIN_SHA:** 5ff9f52
-- **ORIGIN_MAIN_SHA:** 5ff9f52
-- **GITHUB_CI_SHA:** 5ff9f52 (CI PASS)
-- **VERCEL_PRODUCTION_SHA:** 5ff9f52 (SUCCESS)
-- **Official Tag:** v2-m4-assessments-grades-pass
+- **CLOSURE_BASE_SHA:** 8112b9c
+- **CLOSURE_FINAL_SHA:** bcf1b24
 - **Production URL:** https://danielou.vercel.app
 
-### M4 Work Completed
-| Phase | Status |
-|---|---|
-| EXPAND (0007) | APPLIED TO PROD |
-| SWITCH | DONE |
-| CONTRACT (0008) | APPLIED TO PROD |
-| Assessment service | DONE |
-| Grade service | DONE |
-| RBAC + TeacherScope | DONE |
-| API routes (7) | DONE |
-| Assessment UI | DONE |
-| Grade-entry UI | DONE |
-| Tests (322 pass, 3 skip) | DONE |
-| GitHub CI | PASS |
-| Vercel Production | PASS |
-| Smoke tests | PASS |
+### What Was Incomplete
+- Users page was READ-ONLY (list only, no create/edit/activate/deactivate)
+- No POST/PUT/PATCH/DELETE API routes for users
+- No user creation via Better Auth integration
+- No audit logging for user management
 
-## Pending / Next
+### What Was Fixed
+- Created user management service with full CRUD operations
+- Created POST /api/users, PATCH /api/users/[id]
+- Server-side RBAC: only ghost/super_admin can manage users
+- Platform SUPER_ADMIN cannot be assigned through user workflow
+- Audit logging for all user mutations
+- Updated Utilisateurs page with full UI
+- Search support on users list
+- System accounts protected from modification
 
-- AWAIT OWNER AUTHORIZATION FOR M5
+### What Was Tested (Production)
+- 17/17 REQUIRED_NOW routes: 200 OK
+- 0 REQUIRED 404, 0 REQUIRED 500
+- 8/8 FUTURE_M5 routes: 404 (correctly hidden)
+- USER CREATE/EDIT/ACTIVATE/DEACTIVATE/ROLE: all PASS
+- Inscriptions LIST: PASS
+- Affectations LIST: PASS
+- DB HEALTH: AVAILABLE, GHOST: AVAILABLE
 
-## M4-PROD-001 Process Finding
+### What Remains Future (M5)
+- Resultats, Bulletins, Statistiques
+- Dynamic/Custom RBAC roles
+- Password reset/change workflow
 
-- **Issue:** 0007 M4 EXPAND was applied to Production before owner authorization
-- **Technical Impact:** NONE
-- **Business Data Impact:** NONE
-- **Disposition:** CLOSED / LESSON RECORDED
-
-## DO NOT REPEAT
-
+### DO NOT REPEAT
 - Migration 0007 EXPAND
 - Migration 0008 CONTRACT
 - M4 Production release
 - Any completed M3 backfill/import operation
+- Pre-M5 functional closure (this work)
+
+## Pending / Next
+- AWAIT OWNER AUTHORIZATION FOR M5
+- M5 ELIGIBILITY = GO
