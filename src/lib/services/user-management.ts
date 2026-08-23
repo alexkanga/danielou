@@ -101,6 +101,7 @@ export async function createUser(
   input: CreateUserInput,
   session: AppSessionV2,
   schoolId: string,
+  requestHeaders?: Headers,
 ): Promise<UserManagementResult> {
   assertCanManageUsers(session);
 
@@ -126,10 +127,24 @@ export async function createUser(
     }
   }
 
-  // Use Better Auth to create the user (handles password hashing)
+  // Use Better Auth's signUpEmail API with proper request context
+  // This handles password hashing, user + account creation correctly
   try {
     const { getAuth } = await import('@/lib/auth');
     const auth = getAuth();
+
+    // Build headers object for Better Auth (needs origin/host)
+    const headersObj: Record<string, string> = {};
+    if (requestHeaders) {
+      requestHeaders.forEach((value, key) => {
+        headersObj[key] = value;
+      });
+    }
+    // Ensure host is present for Better Auth URL resolution
+    if (!headersObj['host'] && !headersObj['x-forwarded-host']) {
+      headersObj['x-forwarded-host'] = 'danielou.vercel.app';
+      headersObj['x-forwarded-proto'] = 'https';
+    }
 
     const baResult = await auth.api.signUpEmail({
       body: {
@@ -137,11 +152,13 @@ export async function createUser(
         password: input.password,
         name: input.name,
       },
+      headers: headersObj,
     });
 
     const baUser = baResult?.user;
     if (!baUser?.id) {
-      return { success: false, error: 'Échec de la création du compte.', code: 'AUTH_CREATE_FAILED' };
+      const errMsg = baResult?.error?.message || baResult?.error || 'Échec de la création du compte.';
+      return { success: false, error: String(errMsg), code: 'AUTH_CREATE_FAILED' };
     }
 
     // Update the Drizzle user record with role and username

@@ -97,6 +97,7 @@ export async function POST(request: NextRequest) {
       },
       session,
       schoolId,
+      request.headers,
     );
 
     if (!result.success) {
