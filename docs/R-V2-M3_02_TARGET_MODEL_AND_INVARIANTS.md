@@ -3,7 +3,9 @@
 **Date:** 2026-08-23
 **Branch:** v2/m3-pedagogy-configuration
 **Phase B Checkpoint SHA:** baa52e8
-**Phase:** M3 — Pedagogy / Configuration — Target Freeze
+**Phase C Checkpoint SHA:** 6228c9b
+**Reconciliation SHA:** <TBD>
+**Phase:** M3 — Pedagogy / Configuration — Target Freeze (Reconciled)
 
 ---
 
@@ -32,7 +34,8 @@ assessment workflow belong to M4+.
 | Fact | Value |
 |------|-------|
 | DB pedagogy tables | 6 |
-| Legacy fields | 0 |
+| Legacy fields (pre-M3 deprecated) | 0 |
+| M3 redesign removals (current→target) | 3 (subject_component.coefficient, .scale, .is_required) |
 | Runtime legacy references | 0 |
 | Critical findings | 0 |
 | High findings | 0 |
@@ -129,17 +132,24 @@ belong to ConfigComponent.
 | code | text | YES | — | — | PARTIAL UNIQUE(subject_id, code) WHERE code IS NOT NULL |
 | name | text | NO | — | — | UNIQUE(subject_id, name) |
 | sort_order | integer | NO | 0 | — | CHECK >= 0 |
-| coefficient | numeric(6,2) | NO | '1' | — | CHECK > 0 |
-| scale | integer | NO | 20 | — | CHECK >= 1 |
-| is_required | boolean | NO | true | — | — |
 | is_active | boolean | NO | true | — | — |
 | created_at | timestamptz | NO | now() | — | — |
 | updated_at | timestamptz | NO | now() | — | — |
 
+> **C-R02 RECONCILIATION (Targeted Reconciliation):** The previous version of
+> this table erroneously listed `coefficient`, `scale`, and `is_required` as
+> target columns with CHECK constraints. This contradicted the section purpose
+> ("No coefficient, scale, or required-flag as global source of truth — those
+> belong to ConfigComponent") and the Delta Matrix (§24). The correct target
+> omits these 3 columns. They exist in current PROD (verified at 6228c9b) but
+> are redesign removals deferred to Phase I CONTRACT (0 data, 0 runtime reads,
+> 0 runtime writes).
+
 ### Rules
 - `code` is OPTIONAL. When provided, UNIQUE(subject_id, code) via partial unique.
 - `name` is NOT NULL and UNIQUE within subject.
-- `coefficient > 0`, `scale >= 1`, `sort_order >= 0`.
+- `sort_order >= 0`.
+- **No coefficient, scale, or is_required.** These belong to ConfigComponent.
 - ON DELETE subject: CASCADE (components are strict children of their subject).
   This is safe because historical configs link to components via
   config_component.subject_component_id, and subject deletion should
@@ -426,15 +436,28 @@ Values: `simple_average`, `weighted_average`, `single_grade`.
 | `weighted_average` | Sum of (value × weight) / sum of weights. | `coefficient` field of the child entity. | Result is NULL (no average). |
 | `single_grade` | Only one value is expected. No averaging. | None. | If 0 values: NULL. If >1 values: SERVICE ERROR — `single_grade` policy requires exactly one eligible value. |
 
-### Decision: 0 Active Subjects Rule
+### Decision: Active Config Must Have Subjects (C-R01)
 
-**A pedagogical configuration CAN be activated with 0 active ConfigSubject rows.**
+**C-R01 FINAL DECISION: REJECT_EMPTY_ACTIVE_CONFIG**
 
-Rationale: During initial setup, an admin may activate an empty config
-before adding subjects. The M4 calculation engine will simply produce
-no subject averages for that config. This is a valid state for a new
-academic year that hasn't been configured yet. Blocking activation on
-empty configs would create a chicken-and-egg problem for initial setup.
+> **C-R01 RECONCILIATION (Targeted Reconciliation):** The previous version
+> ALLOWED empty config activation with the rationale "no chicken-and-egg
+> problem." This was flawed: DRAFT is mutable, so ConfigSubjects are added
+> BEFORE activation. An ACTIVE config is immutable — subjects can never be
+> added after activation. Activating empty creates a permanently useless
+> immutable artifact (0 calculations, 0 rankings, 0 report card subjects).
+> No legitimate Daniélou business case exists for an ACTIVE config with 0
+> active ConfigSubjects.
+
+A pedagogical configuration MUST have at least 1 active ConfigSubject to be activated.
+
+Rationale: DRAFT is the mutable state where ConfigSubjects are added. There is
+no chicken-and-egg problem because the admin adds subjects to the DRAFT config
+first, then activates. An ACTIVE config is immutable — it cannot receive new
+ConfigSubjects after activation. An ACTIVE config with 0 subjects produces
+no subject averages, no rankings, and no report card data — it serves no
+operational purpose and would require clone→add→activate→archive to recover
+from, producing two empty archived configs.
 
 ---
 
@@ -593,9 +616,10 @@ COMMIT
 | 17 | All ConfigComponent.scale >= 1 | INVALID_SCALE |
 | 18 | All ConfigComponent.sort_order >= 0 | INVALID_SORT_ORDER |
 | 19 | ConfigComponent UNIQUE(config_subject_id, name) not violated | DUPLICATE_COMPONENT_NAME |
+| 20 | Active ConfigSubject count >= 1 | EMPTY_CONFIG |
 
-### Empty Config Rule
-A config with 0 ConfigSubject rows PASSES validation (see §12).
+> **C-R01 RECONCILIATION:** Check #20 replaces the previous "Empty Config
+> Rule" which allowed 0 ConfigSubjects. See §12 for rationale.
 
 ---
 
@@ -787,13 +811,21 @@ not by modifying the trigger.
 | Aspect | Current | Target | Delta | Rationale | Enforcement | Impl Phase |
 |--------|---------|--------|------|-----------|-------------|------------|
 | Column: code | MISSING | `code text NULLABLE` | ADD_COLUMN | Support sub-component codes where used | — | D |
-| Column: coefficient | present, NOT NULL, default '1' | REMOVED | REMOVE_IN_CONTRACT | Coefficient belongs to ConfigComponent, not catalogue | Migration | D |
-| Column: scale | present, NOT NULL, default 20 | REMOVED | REMOVE_IN_CONTRACT | Scale belongs to ConfigComponent, not catalogue | Migration | D |
-| Column: is_required | present, NOT NULL, default true | REMOVED | REMOVE_IN_CONTRACT | Required-ness belongs to ConfigComponent, not catalogue | Migration | D |
+| Column: coefficient | present, NOT NULL, default '1' | ABSENT | CONTRACT_LATER | Coefficient belongs to ConfigComponent, not catalogue. 0 data, 0 runtime reads, 0 runtime writes in PROD (verified 6228c9b). | — | I |
+| Column: scale | present, NOT NULL, default 20 | ABSENT | CONTRACT_LATER | Scale belongs to ConfigComponent, not catalogue. 0 data, 0 runtime reads, 0 runtime writes in PROD (verified 6228c9b). | — | I |
+| Column: is_required | present, NOT NULL, default true | ABSENT | CONTRACT_LATER | Required-ness belongs to ConfigComponent, not catalogue. 0 data, 0 runtime reads, 0 runtime writes in PROD (verified 6228c9b). | — | I |
 | PARTIAL UNIQUE code | NONE | UNIQUE(subject_id, code) WHERE code IS NOT NULL | ADD_PARTIAL_UNIQUE | Prevent duplicate codes when present | DB | D |
 | CHECK sort_order | NONE | CHECK >= 0 | ADD_CHECK | Prevent negative ordering | DB | D |
 | ON DELETE subject | CASCADE | CASCADE | NO_CHANGE | Components are strict children | DB | — |
 | ON DELETE from config_component | FK exists, no ON DELETE | Service RESTRICT | SERVICE_INVARIANT | Preserve historical configs | Service | F |
+
+> **C-R02 RECONCILIATION:** The 3 columns (coefficient, scale, is_required)
+> were previously classified as REMOVE_IN_CONTRACT / Phase D. This was
+> corrected: these are current-state columns (PRESENT in PROD) that are
+> absent from the target model. They are redesign removals, not legacy
+> fields. Per process purity (EXPAND adds, CONTRACT removes), their DROP
+> is deferred to Phase I CONTRACT. Phase B "Legacy fields = 0" remains
+> correct under its definition (no pre-M3 deprecated columns).
 
 ### AssessmentType
 
@@ -863,44 +895,50 @@ following DB deltas:
 | 2 | subject | ADD_CHECK | default_scale >= 1 |
 | 3 | subject | ADD_CHECK | sort_order >= 0 |
 | 4 | subject_component | ADD_COLUMN | code text NULLABLE |
-| 5 | subject_component | DROP COLUMN | coefficient |
-| 6 | subject_component | DROP COLUMN | scale |
-| 7 | subject_component | DROP COLUMN | is_required |
-| 8 | subject_component | ADD_PARTIAL_UNIQUE | UNIQUE(subject_id, code) WHERE code IS NOT NULL |
-| 9 | subject_component | ADD_CHECK | sort_order >= 0 |
-| 10 | assessment_type | ADD_COLUMN | default_coefficient numeric(6,2) NULLABLE |
-| 11 | assessment_type | ADD_COLUMN | default_scale integer NULLABLE |
-| 12 | assessment_type | ADD_COLUMN | is_active boolean NOT NULL DEFAULT true |
-| 13 | assessment_type | ADD_UNIQUE | UNIQUE(school_id, name) |
-| 14 | assessment_type | ADD_CHECK | default_coefficient > 0 WHEN NOT NULL |
-| 15 | assessment_type | ADD_CHECK | default_scale >= 1 WHEN NOT NULL |
-| 16 | pedagogical_config | ADD_PARTIAL_UNIQUE | UNIQUE(level_id, academic_year_id) WHERE status = 'active' |
-| 17 | pedagogical_config | ADD_CHECK | version >= 1 |
-| 18 | pedagogical_config | ADD_CHECK | subject_decimal_places >= 0 AND <= 6 |
-| 19 | pedagogical_config | ADD_CHECK | general_decimal_places >= 0 AND <= 6 |
-| 20 | pedagogical_config | ADD_CHECK | conduct_coefficient >= 0 WHEN NOT NULL |
-| 21 | pedagogical_config | ADD_CHECK | conduct_scale >= 1 WHEN NOT NULL |
-| 22 | config_subject | ADD_COLUMN | is_optional boolean NOT NULL DEFAULT false |
-| 23 | config_subject | ADD_COLUMN | assessment_aggregation aggregation_policy NOT NULL DEFAULT 'weighted_average' |
-| 24 | config_subject | ADD_COLUMN | component_aggregation aggregation_policy NOT NULL DEFAULT 'weighted_average' |
-| 25 | config_subject | ADD_CHECK | coefficient > 0 |
-| 26 | config_subject | ADD_CHECK | scale >= 1 |
-| 27 | config_subject | ADD_CHECK | sort_order >= 0 |
-| 28 | config_component | ALTER_COLUMN | subject_component_id: NULLABLE → NOT NULL (C-CC-01) |
-| 29 | config_component | ADD_COLUMN | assessment_aggregation aggregation_policy NOT NULL DEFAULT 'weighted_average' |
-| 30 | config_component | ADD_UNIQUE | UNIQUE(config_subject_id, name) |
-| 31 | config_component | ADD_CHECK | coefficient > 0 |
-| 32 | config_component | ADD_CHECK | scale >= 1 |
-| 33 | config_component | ADD_CHECK | sort_order >= 0 |
-| 34 | config_component | CHANGE_DELETE_POLICY | subject_component_id FK: add ON DELETE RESTRICT |
-| 35 | report_card | ADD_FK | config_version_id → pedagogical_config(id) |
-| 36 | enum | ADD_ENUM_VALUE | aggregation_policy: simple_average, weighted_average, single_grade |
+| 5 | subject_component | ADD_PARTIAL_UNIQUE | UNIQUE(subject_id, code) WHERE code IS NOT NULL |
+| 6 | subject_component | ADD_CHECK | sort_order >= 0 |
+| 7 | assessment_type | ADD_COLUMN | default_coefficient numeric(6,2) NULLABLE |
+| 8 | assessment_type | ADD_COLUMN | default_scale integer NULLABLE |
+| 9 | assessment_type | ADD_COLUMN | is_active boolean NOT NULL DEFAULT true |
+| 10 | assessment_type | ADD_UNIQUE | UNIQUE(school_id, name) |
+| 11 | assessment_type | ADD_CHECK | default_coefficient > 0 WHEN NOT NULL |
+| 12 | assessment_type | ADD_CHECK | default_scale >= 1 WHEN NOT NULL |
+| 13 | pedagogical_config | ADD_PARTIAL_UNIQUE | UNIQUE(level_id, academic_year_id) WHERE status = 'active' |
+| 14 | pedagogical_config | ADD_CHECK | version >= 1 |
+| 15 | pedagogical_config | ADD_CHECK | subject_decimal_places >= 0 AND <= 6 |
+| 16 | pedagogical_config | ADD_CHECK | general_decimal_places >= 0 AND <= 6 |
+| 17 | pedagogical_config | ADD_CHECK | conduct_coefficient >= 0 WHEN NOT NULL |
+| 18 | pedagogical_config | ADD_CHECK | conduct_scale >= 1 WHEN NOT NULL |
+| 19 | config_subject | ADD_COLUMN | is_optional boolean NOT NULL DEFAULT false |
+| 20 | config_subject | ADD_COLUMN | assessment_aggregation aggregation_policy NOT NULL DEFAULT 'weighted_average' |
+| 21 | config_subject | ADD_COLUMN | component_aggregation aggregation_policy NOT NULL DEFAULT 'weighted_average' |
+| 22 | config_subject | ADD_CHECK | coefficient > 0 |
+| 23 | config_subject | ADD_CHECK | scale >= 1 |
+| 24 | config_subject | ADD_CHECK | sort_order >= 0 |
+| 25 | config_component | ALTER_COLUMN | subject_component_id: NULLABLE → NOT NULL (C-CC-01) |
+| 26 | config_component | ADD_COLUMN | assessment_aggregation aggregation_policy NOT NULL DEFAULT 'weighted_average' |
+| 27 | config_component | ADD_UNIQUE | UNIQUE(config_subject_id, name) |
+| 28 | config_component | ADD_CHECK | coefficient > 0 |
+| 29 | config_component | ADD_CHECK | scale >= 1 |
+| 30 | config_component | ADD_CHECK | sort_order >= 0 |
+| 31 | config_component | CHANGE_DELETE_POLICY | subject_component_id FK: add ON DELETE RESTRICT |
+| 32 | report_card | ADD_FK | config_version_id → pedagogical_config(id) |
+| 33 | enum | ADD_ENUM_VALUE | aggregation_policy: simple_average, weighted_average, single_grade |
+
+> **C-R02 RECONCILIATION:** Items 5-7 (DROP COLUMN coefficient, scale,
+> is_required from subject_component) were removed from Phase D scope.
+> These are redesign removals deferred to Phase I CONTRACT per process
+> purity (EXPAND adds, CONTRACT removes). See §24 SubjectComponent
+> section and §27.
 
 **New enum required:** `aggregation_policy` with values `simple_average`,
 `weighted_average`, `single_grade`. This enum is used by ConfigSubject
 and ConfigComponent.
 
-**Total DB delta objects: 36**
+**Total DB delta objects: 33**
+
+**Service-only deltas for Phase D:**
+- Activation validator: add check #20 (active ConfigSubject count >= 1 → EMPTY_CONFIG rejection)
 
 ---
 
@@ -924,22 +962,38 @@ Page components for navigation targets already defined in `navigation.ts`.
 
 ## 27. Forecast Phase I CONTRACT Scope
 
-**M3 CONTRACT DB DROP SCOPE = 1 object.**
+**M3 CONTRACT DB DROP SCOPE = 3 objects.**
 
-The 3 columns dropped from `subject_component` (coefficient, scale,
-is_required) are not legacy fields — they are current-state fields that
-the target model explicitly removes (REMOVE_IN_CONTRACT). These are
-dropped in Phase D migration 0005, not in Phase I.
+The 3 columns dropped from `subject_component` are current-state columns
+(absent from the M3 target model) that are redesign removals, not legacy
+fields. They are:
 
-Phase I CONTRACT will be a **CONTRACT READINESS VERIFICATION GATE** that
-confirms:
+| # | Table | Action | Column | Precondition Status |
+|---|-------|--------|--------|---------------------|
+| 1 | subject_component | DROP COLUMN | coefficient | 0 data, 0 runtime reads, 0 runtime writes — READY |
+| 2 | subject_component | DROP COLUMN | scale | 0 data, 0 runtime reads, 0 runtime writes — READY |
+| 3 | subject_component | DROP COLUMN | is_required | 0 data, 0 runtime reads, 0 runtime writes — READY |
+
+> **C-R02 RECONCILIATION:** The previous version stated "VERIFICATION GATE
+> ONLY" and "Phase I CONTRACT will be a CONTRACT READINESS VERIFICATION GATE."
+> This was corrected: Phase I CONTRACT now includes 3 DROP COLUMN operations.
+> The columns exist in PROD (verified at 6228c9b) but are absent from the
+> target model. Per process purity (EXPAND adds, CONTRACT removes), they
+> are dropped in Phase I, not Phase D. All preconditions (runtime reads = 0,
+> runtime writes = 0) are already met.
+
+Phase I CONTRACT will also include a VERIFICATION GATE that confirms:
 - No M3 legacy structures remain.
 - All Phase D deltas were applied correctly.
 - No orphaned columns, constraints, or enums from pre-M3 state.
+- The 3 dropped columns no longer exist in the schema.
 
-No destructive DROP operations are needed in Phase I because:
-- Phase B found 0 legacy fields.
-- All removals are part of the intentional target model redesign in Phase D.
+**Rationale for Phase I vs Phase D:** Phase D is EXPAND (add new structures).
+Phase I is CONTRACT (remove old structures, verify clean state). The 3
+subject_component columns are current-state structures that the target
+model removes. The Drizzle schema will be updated in Phase D to not define
+them, but the physical DB columns persist until Phase I CONTRACT drops
+them. This is consistent with the M2 precedent.
 
 ---
 
@@ -998,10 +1052,10 @@ reproducibility.
 | ENFORCEMENT MATRIX | **COMPLETE** — §22, 25/25 |
 | PHASE B FINDINGS | **DISPOSITIONED** — §23, 8/8 |
 | CURRENT→TARGET DELTA | **COMPLETE** — §24, full matrix |
-| PHASE D EXACT SCOPE | **KNOWN** — §25, 36 delta objects |
-| PHASE I CONTRACT FORECAST | **KNOWN** — §27, verification gate only |
+| PHASE D EXACT SCOPE | **KNOWN** — §25, 33 DB delta objects + 1 service-only delta |
+| PHASE I CONTRACT FORECAST | **KNOWN** — §27, 3 DROP COLUMN + verification gate |
 | M4 FIREWALL | **PASS** — §28 |
-| DESIGN AMBIGUITIES | **0** — C-CC-01 resolved (NOT NULL) |
+| DESIGN AMBIGUITIES | **0** — C-CC-01 resolved (NOT NULL), C-R01 resolved (REJECT), C-R02 resolved (CONTRACT_LATER) |
 | CRITICAL OPEN | **0** |
 | HIGH OPEN | **0** |
 
@@ -1014,14 +1068,16 @@ reproducibility.
 ```
 ============================================================
 DANIÉLOU R-V2
-M3 PHASE C — TARGET MODEL & INVARIANTS FREEZE
+M3 PHASE C — TARGET MODEL & INVARIANTS FREEZE (RECONCILED)
 ============================================================
 
 M3-B CHECKPOINT SHA             baa52e8
+M3-C CHECKPOINT SHA             6228c9b
+RECONCILIATION SHA              <TBD>
 RECOVERY STATUS                READY_TO_CONTINUE
 
 SUBJECT CONTRACT               FROZEN
-SUBJECT COMPONENT CONTRACT     FROZEN
+SUBJECT COMPONENT CONTRACT     FROZEN (C-R02 reconciled)
 ASSESSMENT TYPE CONTRACT       FROZEN
 PEDAGOGICAL CONFIG CONTRACT    FROZEN
 CONFIG SUBJECT CONTRACT        FROZEN
@@ -1038,9 +1094,9 @@ ACTIVE IMMUTABILITY            FROZEN
 ARCHIVED IMMUTABILITY          FROZEN
 
 CLONE CONTRACT                 FROZEN
-ACTIVATION CONTRACT            FROZEN
+ACTIVATION CONTRACT            FROZEN (C-R01: REJECT_EMPTY)
 VERSION CONCURRENCY            FROZEN
-ACTIVATION VALIDATOR           FROZEN
+ACTIVATION VALIDATOR           FROZEN (20 checks)
 
 TENANT INVARIANTS              FROZEN
 DELETE POLICY                  FROZEN
@@ -1057,9 +1113,10 @@ PLANNED_PHASE_F                0
 PLANNED_PHASE_G                0
 ACCEPTED/DEFERRED              1
 
-PHASE D DB DELTA OBJECTS       36
+PHASE D DB DELTA OBJECTS       33
+PHASE D SERVICE-ONLY DELTAS    1 (EMPTY_CONFIG check)
 PHASE E DATA MIGRATION NEED    NONE
-PHASE I CONTRACT DROP SCOPE    VERIFICATION GATE ONLY
+PHASE I CONTRACT DROP SCOPE    3 (subject_component cols)
 
 M4 FIREWALL                    PASS
 

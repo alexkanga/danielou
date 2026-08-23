@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-23
 **HEAD:** M3 branch (v2/m3-pedagogy-configuration)
-**Phase:** M3 — Phase C complete, awaiting Phase D GO
+**Phase:** M3 — Phase C reconciled, awaiting Phase D GO
 
 ## Project State
 
@@ -25,11 +25,13 @@
 | M3 Phase A Preflight | PASS |
 | M3 Phase A Security Closure | PASS — 7 credential scripts moved out, local git exclude protection |
 | M3 Phase B Current-State Audit | PASS — 6 pedagogy tables, 0 legacy, 3 moderate/4 low findings, GO for Phase C |
-| M3 Phase C Target Model & Invariants | PASS — 25/25 invariants frozen, 36 Phase D deltas, 0 ambiguities |
+| M3 Phase C Target Model & Invariants | PASS — 25/25 invariants frozen, 33 Phase D DB deltas + 1 service-only, 0 ambiguities |
+| M3 Phase C Targeted Reconciliation | PASS — C-R01 REJECT_EMPTY, C-R02 3 CONTRACT_LATER, C-R03 not created, Phase I scope=3 DROPs |
 
 ## Pending / Next
 
-- Phase D — EXPAND (migration 0005, 36 DB delta objects) — BLOCKED until explicit owner GO
+- Phase D — EXPAND (migration 0005, 33 DB delta objects + 1 service-only delta) — BLOCKED until explicit owner GO
+- Phase I CONTRACT — 3 DROP COLUMN (subject_component.coefficient, .scale, .is_required) + verification gate
 - Tags `v2-pre-m3-final-pass` and `v2-pre-m3-pass` exist on remote
 - M3 branch: `v2/m3-pedagogy-configuration`
 
