@@ -9,41 +9,19 @@ export async function POST() {
   try {
     const { getAuth } = await import('@/lib/auth');
     const auth = getAuth();
-    
-    // Step 1: Find user by username
-    let userFound = null;
-    try {
-      const ctx: any = auth.context;
-      userFound = await ctx.internalAdapter.findOne({
-        model: 'user',
-        where: [{ field: 'username', value: 'prooftest' }]
-      });
-    } catch (e: any) {
-      return NextResponse.json({ step: 'find-user', error: e.message });
-    }
-    if (!userFound) return NextResponse.json({ step: 'find-user', error: 'User not found' });
 
-    // Step 2: Find credential account
-    let accountFound = null;
-    try {
-      const ctx: any = auth.context;
-      accountFound = await ctx.internalAdapter.findCredentialAccount(userFound.id);
-    } catch (e: any) {
-      return NextResponse.json({ step: 'find-credential', userId: userFound.id, error: e.message });
-    }
-    if (!accountFound) return NextResponse.json({ step: 'find-credential', userId: userFound.id, error: 'Account not found' });
-
-    return NextResponse.json({
-      step: 'password-check',
-      userId: userFound.id,
-      accountId: accountFound.accountId,
-      issuer: accountFound.issuer,
-      hasPassword: !!accountFound.password,
-      hasAccessToken: !!accountFound.accessToken,
-      allKeys: Object.keys(accountFound),
+    // Direct signInUsername call like the login action does
+    const result = await auth.api.signInUsername({
+      body: { username: 'prooftest', password: 'TestPass123!' },
     });
+    return NextResponse.json({ step: 'signInUsername', result: JSON.stringify(result) });
   } catch (e: any) {
-    return NextResponse.json({ error: e.message, stack: e.stack?.substring(0, 500) }, { status: 500 });
+    return NextResponse.json({ 
+      step: 'signInUsername-error', 
+      error: e.message, 
+      name: e.constructor.name,
+      stack: e.stack?.substring(0, 800) 
+    });
   }
 }
 
