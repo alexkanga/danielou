@@ -10,7 +10,7 @@
 
 import { eq, and } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { user, schoolMembership } from '@/lib/db/schema';
+import { user, schoolMembership, account } from '@/lib/db/schema';
 import { logPedagogyAudit, sessionToAuditActor, buildChangeLog } from '@/lib/services/pedagogy/audit';
 import type { AppSessionV2, SchoolRole } from '@/lib/types/rbac';
 import { AuthorizationError } from '@/lib/authorization';
@@ -127,67 +127,39 @@ export async function createUser(
     }
   }
 
-  // Use Better Auth's signUpEmail API with proper request context
-  // This handles password hashing, user + account creation correctly
+  // Direct DB insert with Better Auth's password hashing
+  // BA's signUpEmail requires complex request context that's unreliable
+  // in server-side admin API calls. We use BA's hashPassword + direct insert.
   try {
-    const { getAuth } = await import('@/lib/auth');
-    const auth = getAuth();
+    const { hashPassword } = await import('better-auth/crypto');
+    const passwordHash = await hashPassword(input.password);
 
-    // Build headers object for Better Auth (needs origin/host)
-    const headersObj: Record<string, string> = {};
-    if (requestHeaders) {
-      requestHeaders.forEach((value, key) => {
-        headersObj[key] = value;
-      });
-    }
-    // Ensure host/origin are present for Better Auth URL resolution
-    const host = headersObj['x-forwarded-host'] || headersObj['host'] || 'danielou.vercel.app';
-    const proto = headersObj['x-forwarded-proto'] || 'https';
-    if (!headersObj['host']) {
-      headersObj['host'] = host;
-    }
-    if (!headersObj['x-forwarded-host']) {
-      headersObj['x-forwarded-host'] = host;
-      headersObj['x-forwarded-proto'] = proto;
-    }
-    // Better Auth needs the origin to construct callback URLs
-    const origin = `${proto}://${host}`;
-    headersObj['origin'] = origin;
-    headersObj['referer'] = origin;
+    const crypto = await import('crypto');
+    const newUserId = crypto.randomUUID();
 
-    const baResult = await auth.api.signUpEmail({
-      body: {
-        email: input.email,
-        password: input.password,
-        name: input.name,
-      },
-      headers: headersObj,
-    }).catch((err: unknown) => {
-      console.error('[user-management] signUpEmail error:', err);
-      return null;
+    // Insert user record
+    await db.insert(user).values({
+      id: newUserId,
+      email: input.email,
+      name: input.name,
+      username: input.username ?? null,
+      role: input.role,
+      isActive: input.isActive ?? true,
     });
 
-    const baUser = baResult?.user;
-    if (!baUser?.id) {
-      const errMsg = baResult?.error || 'Échec de la création du compte.';
-      console.error('[user-management] signUpEmail failed result:', JSON.stringify(baResult));
-      return { success: false, error: String(errMsg), code: 'AUTH_CREATE_FAILED' };
-    }
-
-    // Update the Drizzle user record with role and username
-    await db
-      .update(user)
-      .set({
-        role: input.role,
-        username: input.username ?? null,
-        isActive: input.isActive ?? true,
-      })
-      .where(eq(user.id, baUser.id));
+    // Insert credential account (Better Auth compatible)
+    // BA's drizzle adapter maps 'password' → 'access_token' for credential provider
+    await db.insert(account).values({
+      userId: newUserId,
+      accountId: newUserId,
+      providerId: 'credential',
+      accessToken: passwordHash,
+    });
 
     // Create school membership
     await db.insert(schoolMembership).values({
       schoolId,
-      userId: baUser.id,
+      userId: newUserId,
       role: input.role,
       isActive: true,
     });
@@ -207,14 +179,14 @@ export async function createUser(
         updatedAt: user.updatedAt,
       })
       .from(user)
-      .where(eq(user.id, baUser.id));
+      .where(eq(user.id, newUserId));
 
     // Audit
     const ip = await getClientIp();
     await logPedagogyAudit({
       action: 'user_created',
       entity: 'user',
-      entityId: baUser.id,
+      entityId: newUserId,
       schoolId,
       newValue: JSON.stringify({ name: input.name, email: input.email, username: input.username, role: input.role }),
       ...sessionToAuditActor(session.user),
