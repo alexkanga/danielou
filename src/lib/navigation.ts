@@ -278,6 +278,27 @@ export const BREADCRUMB_MAP: Array<{
     ],
   },
   {
+    prefix: '/dashboard/composantes',
+    items: [
+      { href: '/dashboard', label: 'Accueil', requiredPermissions: [] },
+      { href: '/dashboard/composantes', label: 'Composantes', requiredPermissions: ['school:components:read'] },
+    ],
+  },
+  {
+    prefix: '/dashboard/types-evaluation',
+    items: [
+      { href: '/dashboard', label: 'Accueil', requiredPermissions: [] },
+      { href: '/dashboard/types-evaluation', label: "Types d'évaluation", requiredPermissions: ['school:assessment_types:read'] },
+    ],
+  },
+  {
+    prefix: '/dashboard/regles-calcul',
+    items: [
+      { href: '/dashboard', label: 'Accueil', requiredPermissions: [] },
+      { href: '/dashboard/regles-calcul', label: 'Règles de calcul', requiredPermissions: ['school:pedagogical_config:read'] },
+    ],
+  },
+  {
     prefix: '/dashboard/evaluations',
     items: [
       { href: '/dashboard', label: 'Accueil', requiredPermissions: [] },

@@ -1,8 +1,8 @@
 # Daniélou — Agent Continuity Checkpoint
 
 **Date:** 2026-08-23
-**HEAD:** 07ac533 (main, pushed to origin)
-**Phase:** Post PRE-M3 Closure — Pre M3
+**HEAD:** M3 branch (v2/m3-pedagogy-configuration)
+**Phase:** M3 — COMPLETE through Phase J, awaiting Production GO
 
 ## Project State
 
@@ -11,6 +11,7 @@
 - Package manager: pnpm
 - All PRE-M3 release gates: PASS
 - DB PROD: 69 students, 24 updated_at triggers, 3 FK RESTRICT policies, 0 data integrity issues
+- DB M3 ADDITIONS: 17 CHECKs, 4 indexes, 1 enum, 7 columns, 1 FK, 1 FK policy change
 
 ## What Was Accomplished
 
@@ -22,11 +23,24 @@
 | PRE-M3 Release Gate | PASS — all 33 requirements verified |
 | Migrations 0003 (triggers) + 0004 (FK RESTRICT) on PROD | APPLIED |
 | Recovery secrets audit | DONE — 4 REQUIRED identified |
+| M3 Phase A Preflight | PASS |
+| M3 Phase A Security Closure | PASS — 7 credential scripts moved out, local git exclude protection |
+| M3 Phase B Current-State Audit | PASS — 6 pedagogy tables, 0 legacy, 3 moderate/4 low findings, GO for Phase C |
+| M3 Phase C Target Model & Invariants | PASS — 25/25 invariants frozen, 33 Phase D DB deltas + 1 service-only, 0 ambiguities |
+| M3 Phase C Targeted Reconciliation | PASS — C-R01 REJECT_EMPTY, C-R02 3 CONTRACT_LATER, C-R03 not created, Phase I scope=3 DROPs |
+| M3 Phase D EXPAND | PASS — migration 0005 (33 DB deltas), schema updated, PROD applied |
+| M3 Phase E Data Migration | PASS — NEED = NONE |
+| M3 Phase F Services | PASS — 6 services, 14 API routes, RBAC, audit, clone, activate |
+| M3 Phase G UI | PASS — 5 pages, DRAFT/ACTIVE/ARCHIVED UX, French labels |
+| M3 Phase H Switch | PASS — 0 legacy reads/writes for CONTRACT columns |
+| M3 Phase I CONTRACT | PASS — migration 0006 (3 DROPs), PROD applied |
+| M3 Phase J Regression | PASS — typecheck 0, lint 0, 279 tests, build PASS |
 
 ## Pending / Next
 
-- M3 implementation — BLOCKED until explicit owner GO
+- PRODUCTION RELEASE — BLOCKED until owner authorization
 - Tags `v2-pre-m3-final-pass` and `v2-pre-m3-pass` exist on remote
+- M3 branch: `v2/m3-pedagogy-configuration`
 
 ## Recovery
 
@@ -36,9 +50,10 @@
 
 ## Known Artifacts NOT in Git
 
-- 7 scripts in `scripts/` containing hardcoded Neon prod credentials (intentionally untracked)
 - `DANIELOU_RECOVERY_SECRETS.txt` (outside repo)
 - `.env.local` (gitignored)
+- Legacy one-off scripts moved to `/home/z/my-project/danielou-legacy-scripts/` (outside repo, contains 7 scripts with hardcoded DB credentials, no longer in workspace)
+- Local `.git/info/exclude` patterns block future accidental adds of prod/closure scripts
 
 ## Critical Operational Knowledge
 
