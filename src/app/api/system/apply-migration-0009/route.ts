@@ -11,45 +11,32 @@ export async function POST() {
   }
 
   const sql = neon(process.env.DATABASE_URL!);
-  
+
   try {
-    const cols = await sql\`
-      SELECT column_name FROM information_schema.columns 
-      WHERE table_name = 'account' AND column_name IN ('issuer', 'password')
-    \`;
-    const existing = new Set(cols.map((c: { column_name: string }) => c.column_name));
+    const cols = await sql`SELECT column_name FROM information_schema.columns WHERE table_name = 'account' AND column_name IN ('issuer', 'password')`;
+    const existing = new Set((cols as any[]).map((c: any) => c.column_name));
 
     const results: string[] = [];
 
     if (!existing.has('issuer')) {
-      await sql\`ALTER TABLE \"account\" ADD COLUMN \"issuer\" text\`;
+      await sql`ALTER TABLE "account" ADD COLUMN "issuer" text`;
       results.push('added issuer column');
     } else {
       results.push('issuer column already exists');
     }
 
     if (!existing.has('password')) {
-      await sql\`ALTER TABLE \"account\" ADD COLUMN \"password\" text\`;
+      await sql`ALTER TABLE "account" ADD COLUMN "password" text`;
       results.push('added password column');
     } else {
       results.push('password column already exists');
     }
 
-    const backfill = await sql\`
-      UPDATE \"account\"
-      SET \"issuer\" = 'local:credential',
-          \"password\" = COALESCE(\"access_token\", \"password\")
-      WHERE \"provider_id\" = 'credential'
-        AND (\"issuer\" IS NULL OR \"password\" IS NULL)
-    \`;
-    results.push(\`backfilled \${backfill.count} rows\`);
+    const backfill = await sql`UPDATE "account" SET "issuer" = 'local:credential', "password" = COALESCE("access_token", "password") WHERE "provider_id" = 'credential' AND ("issuer" IS NULL OR "password" IS NULL)`;
+    results.push(`backfilled ${(backfill as any[]).length} rows`);
 
-    const verify = await sql\`
-      SELECT id, issuer, password IS NOT NULL as has_password
-      FROM \"account\"
-      WHERE \"provider_id\" = 'credential'
-    \`;
-    
+    const verify = await sql`SELECT id, issuer, password IS NOT NULL as has_password FROM "account" WHERE "provider_id" = 'credential'`;
+
     return NextResponse.json({
       success: true,
       results,
