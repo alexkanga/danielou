@@ -54,7 +54,9 @@ export async function middleware(request: NextRequest) {
   }
 
   // Vérifier la session Better-Auth via cookie
-  const sessionToken = request.cookies.get('better-auth.session_token')?.value;
+  const sessionToken =
+    request.cookies.get('__Secure-better-auth.session_token')?.value ||
+    request.cookies.get('better-auth.session_token')?.value;
   if (sessionToken) {
     return NextResponse.next();
   }
