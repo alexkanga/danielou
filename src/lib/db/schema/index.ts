@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, uuid, boolean, integer, numeric, date, pgEnum, index, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, boolean, integer, numeric, date, pgEnum, index, uniqueIndex, check } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 // ==============================================
 // ENUMS
@@ -13,6 +14,7 @@ export const reportCardStatusEnum = pgEnum('report_card_status', ['draft', 'read
 export const configStatusEnum = pgEnum('config_status', ['draft', 'active', 'archived']);
 export const calculationPolicyEnum = pgEnum('calculation_policy', ['simple_average', 'weighted_average', 'single_grade']);
 export const roundingStrategyEnum = pgEnum('rounding_strategy', ['half_up', 'half_even', 'truncate']);
+export const aggregationPolicyEnum = pgEnum('aggregation_policy', ['simple_average', 'weighted_average', 'single_grade']);
 export const promotionDecisionEnum = pgEnum('promotion_decision', ['proposed_admitted', 'proposed_repeat', 'decision_required', 'final_admitted', 'final_repeat']);
 export const roleEnum = pgEnum('app_role', ['admin', 'direction', 'teacher', 'reader']);
 export const platformRoleEnum = pgEnum('platform_role', ['super_admin', 'none']);
@@ -184,6 +186,9 @@ export const subject = pgTable('subject', {
   ...auditColumns,
 }, (table) => [
   uniqueIndex('us_school_code').on(table.schoolId, table.code),
+  check('subject_coefficient_check', sql`\`coefficient\` > 0`),
+  check('subject_default_scale_check', sql`\`default_scale\` >= 1`),
+  check('subject_sort_order_check', sql`\`sort_order\` >= 0`),
 ]);
 
 // ==============================================
@@ -193,16 +198,16 @@ export const subject = pgTable('subject', {
 export const subjectComponent = pgTable('subject_component', {
   id: uuid('id').primaryKey().defaultRandom(),
   subjectId: uuid('subject_id').notNull().references(() => subject.id, { onDelete: 'cascade' }),
+  code: text('code'),
   name: text('name').notNull(),
   sortOrder: integer('sort_order').notNull().default(0),
-  coefficient: numeric('coefficient', { precision: 6, scale: 2 }).notNull().default('1'),
-  componentScale: integer('scale').notNull().default(20),
-  isRequired: boolean('is_required').notNull().default(true),
   isActive: boolean('is_active').notNull().default(true),
   ...auditColumns,
 }, (table) => [
   uniqueIndex('uc_subject_name').on(table.subjectId, table.name),
+  uniqueIndex('uc_subject_code').on(table.subjectId, table.code).where(sql`code IS NOT NULL`),
   index('sc_subject_idx').on(table.subjectId),
+  check('subject_component_sort_order_check', sql`\`sort_order\` >= 0`),
 ]);
 
 // ==============================================
@@ -214,8 +219,15 @@ export const assessmentType = pgTable('assessment_type', {
   schoolId: uuid('school_id').notNull().references(() => school.id),
   name: text('name').notNull(),
   description: text('description'),
+  defaultCoefficient: numeric('default_coefficient', { precision: 6, scale: 2 }),
+  defaultScale: integer('default_scale'),
+  isActive: boolean('is_active').notNull().default(true),
   ...auditColumns,
-});
+}, (table) => [
+  uniqueIndex('uat_school_name').on(table.schoolId, table.name),
+  check('assessment_type_default_coefficient_check', sql`\`default_coefficient\` IS NULL OR \`default_coefficient\` > 0`),
+  check('assessment_type_default_scale_check', sql`\`default_scale\` IS NULL OR \`default_scale\` >= 1`),
+]);
 
 // ==============================================
 // ASSESSMENT
@@ -278,7 +290,7 @@ export const reportCard = pgTable('report_card', {
   promotionDecision: promotionDecisionEnum('promotion_decision'),
   publishedAt: timestamp('published_at', { withTimezone: true }),
   publishedBy: uuid('published_by'),
-  configVersionId: uuid('config_version_id'),
+  configVersionId: uuid('config_version_id').references(() => pedagogicalConfig.id),
   ...auditColumns,
 }, (table) => [
   uniqueIndex('ur_student_period').on(table.studentId, table.academicPeriodId),
@@ -330,6 +342,12 @@ export const pedagogicalConfig = pgTable('pedagogical_config', {
   ...auditColumns,
 }, (table) => [
   uniqueIndex('upc_level_year_version').on(table.levelId, table.academicYearId, table.version),
+  uniqueIndex('upc_level_year_active').on(table.levelId, table.academicYearId).where(sql`status = 'active'`),
+  check('pedagogical_config_version_check', sql`\`version\` >= 1`),
+  check('pedagogical_config_subject_decimals_check', sql`\`subject_decimal_places\` >= 0 AND \`subject_decimal_places\` <= 6`),
+  check('pedagogical_config_general_decimals_check', sql`\`general_decimal_places\` >= 0 AND \`general_decimal_places\` <= 6`),
+  check('pedagogical_config_conduct_coefficient_check', sql`\`conduct_coefficient\` IS NULL OR \`conduct_coefficient\` >= 0`),
+  check('pedagogical_config_conduct_scale_check', sql`\`conduct_scale\` IS NULL OR \`conduct_scale\` >= 1`),
 ]);
 
 // ==============================================
@@ -342,14 +360,20 @@ export const configSubject = pgTable('config_subject', {
   subjectId: uuid('subject_id').notNull().references(() => subject.id),
   coefficient: numeric('coefficient', { precision: 6, scale: 2 }).notNull(),
   componentScale: integer('scale').notNull().default(20),
+  isOptional: boolean('is_optional').notNull().default(false),
   isActive: boolean('is_active').notNull().default(true),
   includeInAverage: boolean('include_in_average').notNull().default(true),
   includeInRanking: boolean('include_in_ranking').notNull().default(true),
   includeInDecision: boolean('include_in_decision').notNull().default(true),
+  assessmentAggregation: aggregationPolicyEnum('assessment_aggregation').notNull().default('weighted_average'),
+  componentAggregation: aggregationPolicyEnum('component_aggregation').notNull().default('weighted_average'),
   sortOrder: integer('sort_order').notNull().default(0),
   ...auditColumns,
 }, (table) => [
   uniqueIndex('ucs_config_subject').on(table.configId, table.subjectId),
+  check('config_subject_coefficient_check', sql`\`coefficient\` > 0`),
+  check('config_subject_scale_check', sql`\`scale\` >= 1`),
+  check('config_subject_sort_order_check', sql`\`sort_order\` >= 0`),
 ]);
 
 // ==============================================
@@ -359,15 +383,21 @@ export const configSubject = pgTable('config_subject', {
 export const configComponent = pgTable('config_component', {
   id: uuid('id').primaryKey().defaultRandom(),
   configSubjectId: uuid('config_subject_id').notNull().references(() => configSubject.id, { onDelete: 'cascade' }),
-  subjectComponentId: uuid('subject_component_id').references(() => subjectComponent.id),
+  subjectComponentId: uuid('subject_component_id').notNull().references(() => subjectComponent.id, { onDelete: 'restrict' }),
   name: text('name').notNull(),
   sortOrder: integer('sort_order').notNull().default(0),
   coefficient: numeric('coefficient', { precision: 6, scale: 2 }).notNull().default('1'),
   componentScale: integer('scale').notNull().default(20),
   isRequired: boolean('is_required').notNull().default(true),
   isActive: boolean('is_active').notNull().default(true),
+  assessmentAggregation: aggregationPolicyEnum('assessment_aggregation').notNull().default('weighted_average'),
   ...auditColumns,
-});
+}, (table) => [
+  uniqueIndex('ucc_config_subject_name').on(table.configSubjectId, table.name),
+  check('config_component_coefficient_check', sql`\`coefficient\` > 0`),
+  check('config_component_scale_check', sql`\`scale\` >= 1`),
+  check('config_component_sort_order_check', sql`\`sort_order\` >= 0`),
+]);
 
 // ==============================================
 // USER
