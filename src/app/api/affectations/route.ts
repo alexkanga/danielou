@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       data: rows,
-      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      pagination: { page, limit, totalItems: total, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
     return handleApiError(error, 'GET /api/affectations') as NextResponse;

@@ -109,54 +109,32 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: 'PenTool',
         requiredPermissions: ['school:grades:manage'],
       },
-      {
-        label: 'Résultats',
-        href: '/dashboard/resultats',
-        icon: 'BarChart3',
-        requiredPermissions: ['school:grades:read'],
-      },
+      // FUTURE_M5: Résultats — not yet implemented
+      // {
+      //   label: 'Résultats',
+      //   href: '/dashboard/resultats',
+      //   icon: 'BarChart3',
+      //   requiredPermissions: ['school:grades:read'],
+      // },
     ],
   },
-  {
-    title: 'Bulletins',
-    items: [
-      {
-        label: 'Préparation',
-        href: '/dashboard/bulletins/preparation',
-        icon: 'ScrollText',
-        requiredPermissions: ['school:report_cards:prepare'],
-      },
-      {
-        label: 'Validation',
-        href: '/dashboard/bulletins/validation',
-        icon: 'CheckCircle',
-        requiredPermissions: ['school:report_cards:validate'],
-      },
-      {
-        label: 'Publication',
-        href: '/dashboard/bulletins/publication',
-        icon: 'Send',
-        requiredPermissions: ['school:report_cards:publish'],
-      },
-      {
-        label: 'Historique',
-        href: '/dashboard/bulletins/historique',
-        icon: 'History',
-        requiredPermissions: ['school:report_cards:read'],
-      },
-    ],
-  },
-  {
-    title: 'Analyse',
-    items: [
-      {
-        label: 'Statistiques',
-        href: '/dashboard/statistiques',
-        icon: 'TrendingUp',
-        requiredPermissions: ['school:statistics:read'],
-      },
-    ],
-  },
+  // FUTURE_M5: Bulletins — not yet implemented
+  // {
+  //   title: 'Bulletins',
+  //   items: [
+  //     { label: 'Préparation', href: '/dashboard/bulletins/preparation', icon: 'ScrollText', requiredPermissions: ['school:report_cards:prepare'] },
+  //     { label: 'Validation', href: '/dashboard/bulletins/validation', icon: 'CheckCircle', requiredPermissions: ['school:report_cards:validate'] },
+  //     { label: 'Publication', href: '/dashboard/bulletins/publication', icon: 'Send', requiredPermissions: ['school:report_cards:publish'] },
+  //     { label: 'Historique', href: '/dashboard/bulletins/historique', icon: 'History', requiredPermissions: ['school:report_cards:read'] },
+  //   ],
+  // },
+  // FUTURE: Statistiques — not yet implemented
+  // {
+  //   title: 'Analyse',
+  //   items: [
+  //     { label: 'Statistiques', href: '/dashboard/statistiques', icon: 'TrendingUp', requiredPermissions: ['school:statistics:read'] },
+  //   ],
+  // },
   {
     title: 'Système',
     items: [
@@ -186,19 +164,21 @@ export const NAV_SECTIONS: NavSection[] = [
         requiredPermissions: ['platform:users:manage'],
         platformRoles: ['ghost', 'super_admin'],
       },
-      {
-        label: 'Rôles',
-        href: '/dashboard/admin/roles',
-        icon: 'Shield',
-        requiredPermissions: ['platform:users:manage'],
-        platformRoles: ['ghost', 'super_admin'],
-      },
-      {
-        label: 'Configuration',
-        href: '/dashboard/admin/configuration',
-        icon: 'Settings',
-        requiredPermissions: ['school:pedagogical_config:manage'],
-      },
+      // Roles are fixed by design (admin/direction/teacher/reader) — no editable UI needed
+      // {
+      //   label: 'Rôles',
+      //   href: '/dashboard/admin/roles',
+      //   icon: 'Shield',
+      //   requiredPermissions: ['platform:users:manage'],
+      //   platformRoles: ['ghost', 'super_admin'],
+      // },
+      // Configuration is a future placeholder — not yet implemented
+      // {
+      //   label: 'Configuration',
+      //   href: '/dashboard/admin/configuration',
+      //   icon: 'Settings',
+      //   requiredPermissions: ['school:pedagogical_config:manage'],
+      // },
       {
         label: "Journal d'audit",
         href: '/dashboard/admin/journal-audit',
