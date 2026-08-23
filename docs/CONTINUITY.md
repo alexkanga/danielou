@@ -1,8 +1,8 @@
 # Daniélou — Agent Continuity Checkpoint
 
 **Date:** 2026-08-23
-**HEAD:** M3 branch (v2/m3-pedagogy-configuration), baseline 471c821 (main, pushed)
-**Phase:** M3 — Phase B complete, awaiting Phase C GO
+**HEAD:** M3 branch (v2/m3-pedagogy-configuration)
+**Phase:** M3 — Phase C complete, awaiting Phase D GO
 
 ## Project State
 
@@ -25,10 +25,11 @@
 | M3 Phase A Preflight | PASS |
 | M3 Phase A Security Closure | PASS — 7 credential scripts moved out, local git exclude protection |
 | M3 Phase B Current-State Audit | PASS — 6 pedagogy tables, 0 legacy, 3 moderate/4 low findings, GO for Phase C |
+| M3 Phase C Target Model & Invariants | PASS — 25/25 invariants frozen, 36 Phase D deltas, 0 ambiguities |
 
 ## Pending / Next
 
-- Phase C — Target Model & Invariants Freeze — BLOCKED until explicit owner GO
+- Phase D — EXPAND (migration 0005, 36 DB delta objects) — BLOCKED until explicit owner GO
 - Tags `v2-pre-m3-final-pass` and `v2-pre-m3-pass` exist on remote
 - M3 branch: `v2/m3-pedagogy-configuration`
 
