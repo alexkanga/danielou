@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
-import { requireAuthorizedSession } from '@/lib/server-guards';
+import { requireAuthorizedSession, requireAssessmentScope } from '@/lib/server-guards';
 import { getSchoolId } from '@/lib/data-access/get-school';
-import { getAssessmentById, updateAssessment, pedagogyErrorToResponse } from '@/lib/services/pedagogy';
+import { getAssessmentById, updateAssessment, getAssessmentScope, pedagogyErrorToResponse } from '@/lib/services/pedagogy';
 import { updateAssessmentSchema } from '@/lib/validations/pedagogy';
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -33,6 +33,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         { status: 400 },
       );
     }
+
+    // Teacher scope: verify teacher is assigned to this assessment's classroom+subject+year
+    const scope = await getAssessmentScope(id);
+    await requireAssessmentScope(session, { schoolId, ...scope });
 
     const updated = await updateAssessment(id, schoolId, parsed.data, session.user);
     return Response.json(updated);

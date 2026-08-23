@@ -90,6 +90,8 @@ export {
   closeAssessment,
   cancelAssessment,
   getEligibleStudents,
+  getAssessmentScope,
+  getClassroomYear,
   AssessmentLifecycleError,
   AssessmentImmutabilityError,
   GradeEligibilityError,

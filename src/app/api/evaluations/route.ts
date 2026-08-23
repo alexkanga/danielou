@@ -1,8 +1,8 @@
 import { NextRequest } from 'next/server';
-import { requireAuthorizedSession } from '@/lib/server-guards';
+import { requireAuthorizedSession, requireAssessmentScope } from '@/lib/server-guards';
 import { getSchoolId } from '@/lib/data-access/get-school';
 import { parsePagination } from '@/lib/data-access/pagination';
-import { listAssessments, createAssessment, pedagogyErrorToResponse } from '@/lib/services/pedagogy';
+import { listAssessments, createAssessment, getClassroomYear, pedagogyErrorToResponse } from '@/lib/services/pedagogy';
 import { createAssessmentSchema } from '@/lib/validations/pedagogy';
 
 export async function GET(request: NextRequest) {
@@ -35,6 +35,15 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
+
+    // Teacher scope: verify teacher is assigned to this classroom+subject+year
+    const academicYearId = await getClassroomYear(parsed.data.classroomId);
+    await requireAssessmentScope(session, {
+      schoolId,
+      classroomId: parsed.data.classroomId,
+      subjectId: parsed.data.subjectId,
+      academicYearId,
+    });
 
     const created = await createAssessment(schoolId, parsed.data, session.user);
     return Response.json(created, { status: 201 });

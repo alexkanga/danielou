@@ -1,12 +1,17 @@
-import { requireAuthorizedSession } from '@/lib/server-guards';
+import { requireAuthorizedSession, requireAssessmentScope } from '@/lib/server-guards';
 import { getSchoolId } from '@/lib/data-access/get-school';
-import { cancelAssessment, pedagogyErrorToResponse } from '@/lib/services/pedagogy';
+import { cancelAssessment, getAssessmentScope, pedagogyErrorToResponse } from '@/lib/services/pedagogy';
 
 export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await requireAuthorizedSession('school:assessments:manage');
     const schoolId = await getSchoolId();
     const { id } = await params;
+
+    // Teacher scope check
+    const scope = await getAssessmentScope(id);
+    await requireAssessmentScope(session, { schoolId, ...scope });
+
     const result = await cancelAssessment(id, schoolId, session.user);
     return Response.json(result);
   } catch (error) {

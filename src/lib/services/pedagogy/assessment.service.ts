@@ -217,6 +217,32 @@ export async function getEligibleStudents(assessmentId: string, schoolId: string
 // Helpers
 // ─────────────────────────────────────
 
+/**
+ * Returns the classroomId, subjectId, academicYearId for teacher scope checks.
+ * Used by route handlers before delegating to service mutations.
+ */
+export async function getAssessmentScope(assessmentId: string): Promise<{ classroomId: string; subjectId: string; academicYearId: string }> {
+  const [row] = await db.select({
+    classroomId: assessment.classroomId,
+    subjectId: assessment.subjectId,
+    academicYearId: classroom.academicYearId,
+  }).from(assessment)
+    .innerJoin(classroom, eq(assessment.classroomId, classroom.id))
+    .where(eq(assessment.id, assessmentId)).limit(1);
+  if (!row) throw new NotFoundError('assessment', assessmentId);
+  return row;
+}
+
+/**
+ * Returns academicYearId for a classroom (for CREATE assessment teacher scope).
+ */
+export async function getClassroomYear(classroomId: string): Promise<string> {
+  const [cls] = await db.select({ academicYearId: classroom.academicYearId }).from(classroom)
+    .where(eq(classroom.id, classroomId)).limit(1);
+  if (!cls) throw new NotFoundError('classroom', classroomId);
+  return cls.academicYearId;
+}
+
 async function verifyClassroomSchool(classroomId: string, schoolId: string): Promise<void> {
   const [cls] = await db.select({ id: classroom.id }).from(classroom)
     .innerJoin(level, eq(classroom.levelId, level.id)).where(and(eq(classroom.id, classroomId), eq(level.schoolId, schoolId))).limit(1);
