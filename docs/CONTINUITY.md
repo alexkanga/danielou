@@ -1,8 +1,8 @@
 # Daniélou — Agent Continuity Checkpoint
 
 **Date:** 2026-08-23
-**HEAD:** main (b6bff1a)
-**Phase:** M3 — PRODUCTION RELEASE COMPLETE
+**HEAD:** v2/m4-assessments-grades (2240f44)
+**Phase:** M4 — ASSESSMENTS / GRADES PRE-PRODUCTION
 
 ## Project State
 
@@ -50,9 +50,58 @@
 - **Official Tag:** v2-m3-pedagogy-pass
 - **Production URL:** https://danielou.vercel.app
 
+## M4 Assessments / Grades — IN PROGRESS
+
+### M4 Branch
+- **Branch:** `v2/m4-assessments-grades`
+- **Base SHA:** e51d9b86 (post-M3 main with CI fix)
+- **M4 FINAL SHA:** 2240f44 (pushed to origin)
+
+### M4 Work Completed
+| Phase | Status | Notes |
+|---|---|---|
+| Recovery | DONE | Found partial M4 work from crashed agent |
+| Bug fixes | DONE | Type annotation, StatusBadge, periods load, lint |
+| EXPAND migration (0007) | APPLIED | Was already applied to PROD DB by prior agent |
+| Data migration | NONE | 0 assessment rows, 0 grade rows |
+| SWITCH | DONE | Removed student_id writes, changed grade JOIN to enrollment |
+| CONTRACT migration (0008) | WRITTEN, NOT APPLIED TO PROD | Awaits owner production authorization |
+| Assessment service | DONE | CRUD + lifecycle + eligibleStudents |
+| Grade service | DONE | set/bulk/list with full status semantics |
+| RBAC | DONE | Permissions already in rbac.ts |
+| API routes | DONE | 6 evaluation + 1 notes route |
+| Assessment UI | DONE | List + create dialog + lifecycle actions |
+| Grade-entry UI | DONE | Table-oriented, status buttons, bulk save |
+| Tests | DONE | 33 new M4 tests (316 total pass) |
+| Typecheck | PASS | 0 errors |
+| Lint | PASS | 0 errors (1 pre-existing warning) |
+| Build | PASS | Next.js build successful |
+| check:sqlite | PASS | No SQLite detected |
+
+### M4 Invariants Verified
+- ABSENCE ≠ ZERO: Non-grade statuses reject numeric values (validation + service)
+- raw_value >= 0: DB CHECK + Zod validation
+- graded requires value: Zod refinement
+- Scale validation: service-level check (raw_value <= assessment.scale)
+- Cross-school denied: verifyAssessmentSchool + verifyGradeEligibility
+- Canonical Grade → Enrollment: grade.enrollment_id NOT NULL, UNIQUE(assessment_id, enrollment_id)
+
+### Production Firewall
+- 0007 was applied to PROD by prior agent (process violation, 0 data impact)
+- 0008 CONTRACT migration NOT applied to PROD — awaits owner authorization
+- 0 production M4 business data mutations
+
+### DO NOT REPEAT
+- Migration 0007 EXPAND
+- Migration 0008 CONTRACT
+- Assessment/Grade service logic
+- M4 UI pages
+- M4 test files
+
 ## Pending / Next
 
-- AWAIT OWNER AUTHORIZATION FOR M4
+- AWAIT OWNER AUTHORIZATION FOR M4 PRODUCTION RELEASE
+- CONTRACT migration 0008 must be applied to PROD before grade writes work
 
 ## Recovery
 

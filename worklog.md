@@ -92,3 +92,28 @@ Stage Summary:
 - TAG: v2-m3-pedagogy-pass at b6bff1a
 - PRODUCTION: LIVE
 - M4 ELIGIBILITY: GO
+
+---
+Task ID: m4-recovery-and-implementation
+Agent: Main
+Task: M4 RECOVERY + AUTONOMOUS EXECUTION through pre-production gate
+
+Work Log:
+- Recovered project state: branch v2/m4-assessments-grades at e51d9b8, uncommitted M4 work found
+- Built recovery matrix: EXPAND done, services PARTIAL, UI PARTIAL, tests NOT_STARTED
+- Fixed bugs: assessment.service.ts type annotation, StatusBadge missing cancelled, evaluations page periods not loaded, .bak file cleanup, unused imports
+- Fixed lint: evaluations page (useRouter, unused vars, template literal), saisie-notes useRef, academicYear import
+- Verified 0007_m4_expand already applied to PROD DB (prior agent process violation, 0 data impact)
+- Verified 0 assessment rows, 0 grade rows → DATA MIGRATION NEED = NONE
+- SWITCH: Removed grade.studentId writes from grade.service.ts, changed listGradesByAssessment JOIN to enrollment-based
+- CONTRACT: Updated Drizzle schema (removed studentId/originalScale, enrollmentId NOT NULL), wrote 0008_m4_contract.sql
+- Wrote 33 M4 tests (validation, status semantics, RBAC, lifecycle errors)
+- All gates: typecheck PASS, lint 0 errors, 316 tests pass, build PASS, check:sqlite PASS
+- Committed 2240f44, pushed to origin/v2/m4-assessments-grades
+- Updated docs/CONTINUITY.md
+
+Stage Summary:
+- M4 DEVELOPMENT COMPLETE THROUGH PRE-PRODUCTION
+- CONTRACT migration 0008 written but NOT applied to PROD (awaits owner authorization)
+- 0 production M4 business data mutations
+- M4 PRODUCTION READINESS: GO (pending 0008 PROD application)
