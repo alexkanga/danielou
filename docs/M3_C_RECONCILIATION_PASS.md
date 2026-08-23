@@ -3,7 +3,7 @@
 **Date:** 2026-08-23
 **Branch:** v2/m3-pedagogy-configuration
 **Previous M3-C SHA:** 6228c9b
-**Reconciliation SHA:** <TBD>
+**Reconciliation SHA:** 2449f75
 **Phase:** M3 — Phase C Targeted Reconciliation
 
 ---

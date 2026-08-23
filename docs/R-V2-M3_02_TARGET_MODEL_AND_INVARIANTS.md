@@ -4,7 +4,7 @@
 **Branch:** v2/m3-pedagogy-configuration
 **Phase B Checkpoint SHA:** baa52e8
 **Phase C Checkpoint SHA:** 6228c9b
-**Reconciliation SHA:** <TBD>
+**Reconciliation SHA:** 2449f75
 **Phase:** M3 — Pedagogy / Configuration — Target Freeze (Reconciled)
 
 ---
@@ -1073,7 +1073,7 @@ M3 PHASE C — TARGET MODEL & INVARIANTS FREEZE (RECONCILED)
 
 M3-B CHECKPOINT SHA             baa52e8
 M3-C CHECKPOINT SHA             6228c9b
-RECONCILIATION SHA              <TBD>
+RECONCILIATION SHA              2449f75
 RECOVERY STATUS                READY_TO_CONTINUE
 
 SUBJECT CONTRACT               FROZEN
