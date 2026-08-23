@@ -26,6 +26,12 @@ export function getAuth() {
         expiresIn: 60 * 60 * 24 * 7,
         updateAge: 60 * 60 * 24,
       },
+      // UUID generation for session/account IDs (schema uses uuid PKs)
+      advanced: {
+        database: {
+          generateId: 'uuid',
+        },
+      },
       plugins: [
         username({
           minUsernameLength: 3,
