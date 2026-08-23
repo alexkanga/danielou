@@ -439,6 +439,9 @@ export const account = pgTable('account', {
   accessToken: text('access_token'),
   refreshToken: text('refresh_token'),
   expiresAt: timestamp('expires_at', { withTimezone: true }),
+  // Better Auth 1.7.1 compatibility fields
+  issuer: text('issuer'),
+  password: text('password'),
   ...auditColumns,
 });
 

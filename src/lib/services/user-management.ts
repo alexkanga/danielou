@@ -148,12 +148,15 @@ export async function createUser(
       isActive: input.isActive ?? true,
     });
 
-    // Insert credential account (Better Auth compatible)
-    // BA's drizzle adapter maps 'password' → 'access_token' for credential provider
+    // Insert credential account (Better Auth 1.7.1 compatible)
+    // BA 1.7.1 findCredentialAccount requires: userId, providerId='credential',
+    // issuer='local:credential', accountId=userId. Password must be in 'password' field.
     await db.insert(account).values({
       userId: newUserId,
       accountId: newUserId,
       providerId: 'credential',
+      issuer: 'local:credential',
+      password: passwordHash,
       accessToken: passwordHash,
     });
 
