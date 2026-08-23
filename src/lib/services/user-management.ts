@@ -140,11 +140,20 @@ export async function createUser(
         headersObj[key] = value;
       });
     }
-    // Ensure host is present for Better Auth URL resolution
-    if (!headersObj['host'] && !headersObj['x-forwarded-host']) {
-      headersObj['x-forwarded-host'] = 'danielou.vercel.app';
-      headersObj['x-forwarded-proto'] = 'https';
+    // Ensure host/origin are present for Better Auth URL resolution
+    const host = headersObj['x-forwarded-host'] || headersObj['host'] || 'danielou.vercel.app';
+    const proto = headersObj['x-forwarded-proto'] || 'https';
+    if (!headersObj['host']) {
+      headersObj['host'] = host;
     }
+    if (!headersObj['x-forwarded-host']) {
+      headersObj['x-forwarded-host'] = host;
+      headersObj['x-forwarded-proto'] = proto;
+    }
+    // Better Auth needs the origin to construct callback URLs
+    const origin = `${proto}://${host}`;
+    headersObj['origin'] = origin;
+    headersObj['referer'] = origin;
 
     const baResult = await auth.api.signUpEmail({
       body: {
@@ -153,11 +162,15 @@ export async function createUser(
         name: input.name,
       },
       headers: headersObj,
+    }).catch((err: unknown) => {
+      console.error('[user-management] signUpEmail error:', err);
+      return null;
     });
 
     const baUser = baResult?.user;
     if (!baUser?.id) {
-      const errMsg = baResult?.error?.message || baResult?.error || 'Échec de la création du compte.';
+      const errMsg = baResult?.error || 'Échec de la création du compte.';
+      console.error('[user-management] signUpEmail failed result:', JSON.stringify(baResult));
       return { success: false, error: String(errMsg), code: 'AUTH_CREATE_FAILED' };
     }
 
