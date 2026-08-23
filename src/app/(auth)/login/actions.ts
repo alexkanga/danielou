@@ -33,11 +33,8 @@ export async function loginAction(
 
   // ─────────────────────────────────────────────
   // 1. Ghost Auth — Fantomas is ALWAYS available (§4)
-  //    No DB call. No Better Auth dependency.
-  //    No external fetch that could swallow cookies (§37).
   // ─────────────────────────────────────────────
   const ghostConfig = getGhostConfig();
-  // ghostConfig.available is ALWAYS true — no guard needed
   if (login.toLowerCase() === ghostConfig.username.toLowerCase()) {
     if (validateGhostCredentials(login, password)) {
       try {
@@ -60,13 +57,11 @@ export async function loginAction(
         return { success: false, error: 'Service Ghost indisponible.' };
       }
     }
-    // Mauvais mot de passe pour Fantomas → ne PAS essayer Better Auth (§25/§40)
     return { success: false, error: 'Identifiants invalides.' };
   }
 
   // ─────────────────────────────────────────────
   // 2. Better Auth — ordinary users (§5, §25)
-  //    Ghost is NEVER tried for non-Fantomas identifiers.
   // ─────────────────────────────────────────────
   try {
     const { getAuth } = await import('@/lib/auth');
@@ -78,7 +73,17 @@ export async function loginAction(
       const result: any = await auth.api.signInUsername({
         body: { username: login, password },
       });
-      if (result?.user) {
+      if (result?.token) {
+        // BA 1.7.1: server-side API doesn't automatically set cookies
+        // in server action context. Set the session cookie manually.
+        const cookieStore = await cookies();
+        cookieStore.set('better-auth.session_token', result.token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 60 * 60 * 24 * 7, // 7 days
+        });
         const u = result.user as Record<string, unknown>;
         const isSuperAdmin = Boolean(u.isSuperAdmin || u.platformRole === 'super_admin');
         return {
@@ -102,7 +107,15 @@ export async function loginAction(
       const result: any = await auth.api.signInEmail({
         body: { email: login, password },
       });
-      if (result?.user) {
+      if (result?.token) {
+        const cookieStore = await cookies();
+        cookieStore.set('better-auth.session_token', result.token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 60 * 60 * 24 * 7,
+        });
         const u = result.user as Record<string, unknown>;
         const isSuperAdmin = Boolean(u.isSuperAdmin || u.platformRole === 'super_admin');
         return {
