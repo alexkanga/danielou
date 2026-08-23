@@ -33,7 +33,12 @@ export default function UtilisateursPage() {
     }
   };
 
-  useEffect(() => { void fetchData(); }, []);
+  /* eslint-disable react-hooks/set-state-in-effect -- data fetch on mount */
+  useEffect(() => {
+    void fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   return (
     <div className="space-y-6">
@@ -45,18 +50,18 @@ export default function UtilisateursPage() {
         columns={[
           { key: 'name', label: 'Nom' },
           { key: 'email', label: 'Email' },
-          { key: 'username', label: 'Identifiant', render: (item) => item.username ?? '—' },
-          { key: 'role', label: 'Rôle scolaire' },
-          { key: 'platformRole', label: 'Rôle plateforme' },
-          { key: 'isSuperAdmin', label: 'Super Admin', render: (item) => item.isSuperAdmin ? 'Oui' : 'Non' },
-          { key: 'isActive', label: 'Actif', render: (item) => item.isActive ? 'Oui' : 'Non' },
-          { key: 'createdAt', label: 'Créé le', render: (item) => formatDate(item.createdAt) },
+          { key: 'username', label: 'Identifiant', render: (item: UserRow) => item.username ?? '—' },
+          { key: 'role', label: 'Role scolaire' },
+          { key: 'platformRole', label: 'Role plateforme' },
+          { key: 'isSuperAdmin', label: 'Super Admin', render: (item: UserRow) => item.isSuperAdmin ? 'Oui' : 'Non' },
+          { key: 'isActive', label: 'Actif', render: (item: UserRow) => item.isActive ? 'Oui' : 'Non' },
+          { key: 'createdAt', label: 'Cree le', render: (item: UserRow) => formatDate(item.createdAt) },
         ]}
         data={data}
         pagination={pagination}
-        onPageChange={(p) => fetchData(p)}
-        getId={(item) => item.id}
-        emptyMessage="Aucun utilisateur trouvé."
+        onPageChange={(p: number) => fetchData(p)}
+        getId={(item: UserRow) => item.id}
+        emptyMessage="Aucun utilisateur trouve."
       />
     </div>
   );

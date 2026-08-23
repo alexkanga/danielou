@@ -38,7 +38,9 @@ export default function JournalAuditPage() {
     }
   };
 
+  /* eslint-disable react-hooks/set-state-in-effect -- data fetch */
   useEffect(() => { void fetchData(); }, [entityFilter]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const formatValue = (v: string | null) => {
     if (!v) return '—';
