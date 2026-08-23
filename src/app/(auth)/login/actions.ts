@@ -70,7 +70,7 @@ export async function loginAction(
               const match = value.match(/^([^=]+)=([^;]*)/);
               if (match) {
                 const [, name, val] = match;
-                cookieStore.set(name, val, {
+                cookieStore.set(name, decodeURIComponent(val), {
                   httpOnly: true,
                   secure: true,
                   sameSite: 'lax',
@@ -108,7 +108,7 @@ export async function loginAction(
               const match = value.match(/^([^=]+)=([^;]*)/);
               if (match) {
                 const [, name, val] = match;
-                cookieStore.set(name, val, {
+                cookieStore.set(name, decodeURIComponent(val), {
                   httpOnly: true,
                   secure: true,
                   sameSite: 'lax',
