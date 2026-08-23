@@ -1,26 +1,12 @@
 'use server';
 
-/**
- * R-V2-M1-H2 — Login Server Action (Always-Available Fantomas)
- * 
- * Flux:
- * 1. Si l'identifiant correspond a Fantomas -> Ghost Auth (sans DB, sans Better Auth)
- * 2. Sinon -> Better Auth (username/password puis email/password)
- * 
- * BA 1.7.1 in production uses __Secure- prefix on session cookie.
- */
-
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { validateGhostCredentials, signGhostSession, getGhostCookieOptions } from '@/lib/ghost-auth';
 import { getGhostConfig } from '@/lib/ghost-config';
 
 export type LoginResult =
   | { success: true; user: { id: string; email: string; name: string; platformRole: string }; source: string }
   | { success: false; error: string };
-
-const BA_SESSION_TOKEN_NAME = process.env.NODE_ENV === 'production'
-  ? '__Secure-better-auth.session_token'
-  : 'better-auth.session_token';
 
 export async function loginAction(
   _prevState: LoginResult | null,
@@ -33,7 +19,6 @@ export async function loginAction(
     return { success: false, error: 'Veuillez remplir tous les champs.' };
   }
 
-  // Ghost Auth
   const ghostConfig = getGhostConfig();
   if (login.toLowerCase() === ghostConfig.username.toLowerCase()) {
     if (validateGhostCredentials(login, password)) {
@@ -60,72 +45,88 @@ export async function loginAction(
     return { success: false, error: 'Identifiants invalides.' };
   }
 
-  // Better Auth — ordinary users
   try {
-    const { getAuth } = await import('@/lib/auth');
-    const auth = getAuth();
+    const baseUrl = process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const headersList = await headers();
+    const forwardedFor = headersList.get('x-forwarded-for') || '';
+    const userAgent = headersList.get('user-agent') || '';
 
-    // Try username sign-in first
+    // Try username sign-in via BA HTTP endpoint
     try {
-      const result: any = await auth.api.signInUsername({
-        body: { username: login, password },
+      const resp = await fetch(`${baseUrl}/api/auth/sign-in/username`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(userAgent ? { 'user-agent': userAgent } : {}), ...(forwardedFor ? { 'x-forwarded-for': forwardedFor } : {}) },
+        body: JSON.stringify({ username: login, password }),
+        redirect: 'manual',
       });
-      if (result?.token) {
-        const cookieStore = await cookies();
-        cookieStore.set(BA_SESSION_TOKEN_NAME, result.token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          path: '/',
-          maxAge: 60 * 60 * 24 * 7,
-        });
-        const u = result.user as Record<string, unknown>;
-        const isSuperAdmin = Boolean(u.isSuperAdmin || u.platformRole === 'super_admin');
-        return {
-          success: true,
-          user: {
-            id: String(u.id ?? ''),
-            email: String(u.email ?? login),
-            name: String(u.name ?? login),
-            platformRole: isSuperAdmin ? 'super_admin' : 'none',
-          },
-          source: 'better-auth',
-        };
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data?.token && data?.user) {
+          // Forward all Set-Cookie headers from BA to the client
+          const respHeaders = resp.headers;
+          const cookieStore = await cookies();
+          respHeaders.forEach((value, key) => {
+            if (key === 'set-cookie') {
+              const match = value.match(/^([^=]+)=([^;]*)/);
+              if (match) {
+                const [, name, val] = match;
+                cookieStore.set(name, val, {
+                  httpOnly: true,
+                  secure: true,
+                  sameSite: 'lax',
+                  path: '/',
+                });
+              }
+            }
+          });
+          const u = data.user as Record<string, unknown>;
+          const isSuperAdmin = Boolean(u.isSuperAdmin || u.platformRole === 'super_admin');
+          return {
+            success: true,
+            user: { id: String(u.id ?? ''), email: String(u.email ?? login), name: String(u.name ?? login), platformRole: isSuperAdmin ? 'super_admin' : 'none' },
+            source: 'better-auth',
+          };
+        }
       }
-    } catch {
-      // Username sign-in failed, try email
-    }
+    } catch { /* username failed */ }
 
     // Try email sign-in
     try {
-      const result: any = await auth.api.signInEmail({
-        body: { email: login, password },
+      const resp = await fetch(`${baseUrl}/api/auth/sign-in/email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(userAgent ? { 'user-agent': userAgent } : {}), ...(forwardedFor ? { 'x-forwarded-for': forwardedFor } : {}) },
+        body: JSON.stringify({ email: login, password }),
+        redirect: 'manual',
       });
-      if (result?.token) {
-        const cookieStore = await cookies();
-        cookieStore.set(BA_SESSION_TOKEN_NAME, result.token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          path: '/',
-          maxAge: 60 * 60 * 24 * 7,
-        });
-        const u = result.user as Record<string, unknown>;
-        const isSuperAdmin = Boolean(u.isSuperAdmin || u.platformRole === 'super_admin');
-        return {
-          success: true,
-          user: {
-            id: String(u.id ?? ''),
-            email: String(u.email ?? login),
-            name: String(u.name ?? login),
-            platformRole: isSuperAdmin ? 'super_admin' : 'none',
-          },
-          source: 'better-auth',
-        };
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data?.token && data?.user) {
+          const respHeaders = resp.headers;
+          const cookieStore = await cookies();
+          respHeaders.forEach((value, key) => {
+            if (key === 'set-cookie') {
+              const match = value.match(/^([^=]+)=([^;]*)/);
+              if (match) {
+                const [, name, val] = match;
+                cookieStore.set(name, val, {
+                  httpOnly: true,
+                  secure: true,
+                  sameSite: 'lax',
+                  path: '/',
+                });
+              }
+            }
+          });
+          const u = data.user as Record<string, unknown>;
+          const isSuperAdmin = Boolean(u.isSuperAdmin || u.platformRole === 'super_admin');
+          return {
+            success: true,
+            user: { id: String(u.id ?? ''), email: String(u.email ?? login), name: String(u.name ?? login), platformRole: isSuperAdmin ? 'super_admin' : 'none' },
+            source: 'better-auth',
+          };
+        }
       }
-    } catch {
-      // Email sign-in also failed
-    }
+    } catch { /* email failed */ }
 
     return { success: false, error: 'Identifiants invalides.' };
   } catch {
