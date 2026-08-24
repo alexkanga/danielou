@@ -17,6 +17,7 @@ export const calculationPolicyEnum = pgEnum('calculation_policy', ['simple_avera
 export const roundingStrategyEnum = pgEnum('rounding_strategy', ['half_up', 'half_even', 'truncate']);
 export const aggregationPolicyEnum = pgEnum('aggregation_policy', ['simple_average', 'weighted_average', 'single_grade']);
 export const promotionDecisionEnum = pgEnum('promotion_decision', ['proposed_admitted', 'proposed_repeat', 'decision_required', 'final_admitted', 'final_repeat']);
+export const generalAverageInputPolicyEnum = pgEnum('general_average_input_policy', ['subject_official', 'subject_raw']);
 export const roleEnum = pgEnum('app_role', ['admin', 'direction', 'teacher', 'reader']);
 export const platformRoleEnum = pgEnum('platform_role', ['super_admin', 'none']);
 export const schoolMembershipRoleEnum = pgEnum('school_membership_role', ['admin', 'direction', 'teacher', 'reader']);
@@ -291,10 +292,19 @@ export const reportCard = pgTable('report_card', {
   enrollmentId: uuid('enrollment_id').notNull().references(() => enrollment.id),
   academicPeriodId: uuid('academic_period_id').notNull().references(() => academicPeriod.id),
   status: reportCardStatusEnum('status').notNull().default('draft'),
-  generalAverage: numeric('general_average', { precision: 8, scale: 4 }),
+  generalAverageRaw: numeric('general_average_raw', { precision: 12, scale: 8 }),
+  generalAverageOfficial: numeric('general_average_official', { precision: 8, scale: 4 }),
+  generalAverageInputPolicy: generalAverageInputPolicyEnum('general_average_input_policy'),
+  roundingStrategy: roundingStrategyEnum('rounding_strategy'),
+  subjectDecimalPlaces: integer('subject_decimal_places'),
+  generalDecimalPlaces: integer('general_decimal_places'),
   classAverage: numeric('class_average', { precision: 8, scale: 4 }),
+  minClassAverage: numeric('min_class_average', { precision: 8, scale: 4 }),
+  maxClassAverage: numeric('max_class_average', { precision: 8, scale: 4 }),
   rank: integer('rank'),
   totalStudentsRanked: integer('total_students_ranked'),
+  totalWeightedPoints: numeric('total_weighted_points', { precision: 12, scale: 4 }),
+  totalEligibleCoefficient: numeric('total_eligible_coefficient', { precision: 8, scale: 2 }),
   conductGrade: numeric('conduct_grade', { precision: 4, scale: 2 }),
   conductComment: text('conduct_comment'),
   teacherComment: text('teacher_comment'),
@@ -308,6 +318,7 @@ export const reportCard = pgTable('report_card', {
   uniqueIndex('ur_student_period').on(table.studentId, table.academicPeriodId),
   index('rc_enrollment_idx').on(table.enrollmentId),
   index('rc_status_idx').on(table.status),
+  index('rc_config_version_idx').on(table.configVersionId),
 ]);
 
 // ==============================================
@@ -318,16 +329,38 @@ export const reportCardItem = pgTable('report_card_item', {
   id: uuid('id').primaryKey().defaultRandom(),
   reportCardId: uuid('report_card_id').notNull().references(() => reportCard.id, { onDelete: 'cascade' }),
   subjectId: uuid('subject_id').notNull().references(() => subject.id),
-  average: numeric('average', { precision: 8, scale: 4 }),
+  subjectName: text('subject_name').notNull(),
+  subjectCode: text('subject_code'),
+  rawValue: numeric('raw_value', { precision: 12, scale: 8 }),
+  officialValue: numeric('official_value', { precision: 8, scale: 4 }),
   coefficient: numeric('coefficient', { precision: 6, scale: 2 }),
-  weightedPoints: numeric('weighted_points', { precision: 10, scale: 4 }),
+  weightedPoints: numeric('weighted_points', { precision: 12, scale: 8 }),
+  includeInAverage: boolean('include_in_average').notNull().default(true),
+  isIncomplete: boolean('is_incomplete').notNull().default(false),
   classAverage: numeric('class_average', { precision: 8, scale: 4 }),
   minAverage: numeric('min_average', { precision: 8, scale: 4 }),
   maxAverage: numeric('max_average', { precision: 8, scale: 4 }),
   teacherAppreciation: text('teacher_appreciation'),
+  sortOrder: integer('sort_order').notNull().default(0),
   ...auditColumns,
 }, (table) => [
   uniqueIndex('uri_rc_subject').on(table.reportCardId, table.subjectId),
+]);
+
+// ==============================================
+// REPORT CARD COMPONENT ITEM (composante snapshot)
+// ==============================================
+
+export const reportCardComponentItem = pgTable('report_card_component_item', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  reportCardItemId: uuid('report_card_item_id').notNull().references(() => reportCardItem.id, { onDelete: 'cascade' }),
+  componentName: text('component_name').notNull(),
+  rawValue: numeric('raw_value', { precision: 12, scale: 8 }),
+  coefficient: numeric('coefficient', { precision: 6, scale: 2 }),
+  sortOrder: integer('sort_order').notNull().default(0),
+  ...auditColumns,
+}, (table) => [
+  index('rcci_item_idx').on(table.reportCardItemId),
 ]);
 
 // ==============================================
@@ -350,6 +383,7 @@ export const pedagogicalConfig = pgTable('pedagogical_config', {
   conductIncludedInAverage: boolean('conduct_included_in_average').notNull().default(false),
   conductCoefficient: numeric('conduct_coefficient', { precision: 6, scale: 2 }).default('0'),
   conductScale: integer('conduct_scale').default(20),
+  generalAverageInputPolicy: generalAverageInputPolicyEnum('general_average_input_policy').notNull().default('subject_official'),
   description: text('description'),
   ...auditColumns,
 }, (table) => [
@@ -560,3 +594,5 @@ export type AssessmentType = typeof assessmentType.$inferSelect;
 export type NewAssessmentType = typeof assessmentType.$inferInsert;
 export type TeacherAssignment = typeof teacherAssignment.$inferSelect;
 export type NewTeacherAssignment = typeof teacherAssignment.$inferInsert;
+export type ReportCardComponentItem = typeof reportCardComponentItem.$inferSelect;
+export type NewReportCardComponentItem = typeof reportCardComponentItem.$inferInsert;
