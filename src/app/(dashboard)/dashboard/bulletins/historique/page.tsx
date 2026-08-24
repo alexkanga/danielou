@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { PageHeader, DataTable } from '@/components/shared';
 import { Button } from '@/components/ui/button';
@@ -146,7 +146,7 @@ export default function BulletinsHistoriquePage() {
   // --- Reference data ---
   const [classrooms, setClassrooms] = useState<{ id: string; name: string }[]>([]);
   const [periods, setPeriods] = useState<{ id: string; name: string }[]>([]);
-  const [refsLoaded, setRefsLoaded] = useState(false);
+  const refsLoadedRef = useRef(false);
 
   // --- Selection ---
   const [selClassroom, setSelClassroom] = useState('');
@@ -171,78 +171,77 @@ export default function BulletinsHistoriquePage() {
 
   // --------------- Load references ---------------
 
-  const loadRefs = useCallback(async () => {
-    if (refsLoaded) return;
-    try {
-      const [c, y] = await Promise.all([
-        fetch('/api/classes?limit=100').then(r => (r.ok ? r.json() : { data: [] })),
-        fetch('/api/annees-scolaires?limit=100').then(r => (r.ok ? r.json() : { data: [] })),
-      ]);
-      setClassrooms(
-        (c.data || []).map((x: { id: string; name: string }) => ({ id: x.id, name: x.name })),
-      );
+  useEffect(() => {
+    if (refsLoadedRef.current) return;
+    refsLoadedRef.current = true;
+    let cancelled = false;
 
-      const allPeriods: { id: string; name: string }[] = [];
-      for (const year of y.data || []) {
-        try {
-          const pr = await fetch(`/api/annees-scolaires/${year.id}`);
-          if (pr.ok) {
-            const jd = await pr.json();
-            for (const p of jd.periods || []) {
+    Promise.all([
+      fetch('/api/classes?limit=100').then(r => (r.ok ? r.json() : { data: [] })),
+      fetch('/api/annees-scolaires?limit=100').then(r => (r.ok ? r.json() : { data: [] })),
+    ])
+      .then(([c, y]) => {
+        if (cancelled) return;
+        setClassrooms(
+          (c.data || []).map((x: { id: string; name: string }) => ({ id: x.id, name: x.name })),
+        );
+
+        const allPeriods: { id: string; name: string }[] = [];
+        const yearList = y.data || [];
+        const periodPromises = yearList.map((year: { id: string }) =>
+          fetch(`/api/annees-scolaires/${year.id}`)
+            .then(pr => (pr.ok ? pr.json() : { periods: [] }))
+            .then(jd => jd.periods || [])
+            .catch(() => []),
+        );
+        Promise.all(periodPromises).then(periodBatches => {
+          if (cancelled) return;
+          for (const batch of periodBatches) {
+            for (const p of batch) {
               allPeriods.push({ id: p.id, name: p.name });
             }
           }
-        } catch {
-          /* skip */
-        }
-      }
-      setPeriods(allPeriods);
-      setRefsLoaded(true);
-    } catch {
-      /* silent */
-    }
-  }, [refsLoaded]);
+          setPeriods(allPeriods);
+        });
+      })
+      .catch(() => { /* silent */ });
 
-  useEffect(() => {
-    void loadRefs();
-  }, [loadRefs]);
+    return () => { cancelled = true; };
+  }, []);
 
   // --------------- Fetch bulletins ---------------
 
-  const fetchBulletins = useCallback(
-    async (page = 1) => {
-      if (!selClassroom || !selPeriod) return;
-      setFetching(true);
-      try {
-        // Regenerate via POST to ensure latest data
-        await fetch('/api/bulletins', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ classroomId: selClassroom, academicPeriodId: selPeriod }),
-        }).catch(() => { /* non-blocking */ });
+  const fetchBulletins = async (page = 1) => {
+    if (!selClassroom || !selPeriod) return;
+    setFetching(true);
+    try {
+      // Regenerate via POST to ensure latest data
+      await fetch('/api/bulletins', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ classroomId: selClassroom, academicPeriodId: selPeriod }),
+      }).catch(() => { /* non-blocking */ });
 
-        const p = new URLSearchParams({
-          classroomId: selClassroom,
-          academicPeriodId: selPeriod,
-          page: String(page),
-          limit: '25',
-        });
-        const r = await fetch(`/api/bulletins?${p}`);
-        if (!r.ok) throw new Error();
-        const j = await r.json();
-        setData(j.data || []);
-        setPg(j.pagination || { page: 1, limit: 25, totalItems: 0, totalPages: 1 });
-        setHasSelected(true);
-        setActiveTab('all');
-        setSearch('');
-      } catch {
-        toast.error('Erreur de chargement des bulletins.');
-      } finally {
-        setFetching(false);
-      }
-    },
-    [selClassroom, selPeriod],
-  );
+      const p = new URLSearchParams({
+        classroomId: selClassroom,
+        academicPeriodId: selPeriod,
+        page: String(page),
+        limit: '25',
+      });
+      const r = await fetch(`/api/bulletins?${p}`);
+      if (!r.ok) throw new Error();
+      const j = await r.json();
+      setData(j.data || []);
+      setPg(j.pagination || { page: 1, limit: 25, totalItems: 0, totalPages: 1 });
+      setHasSelected(true);
+      setActiveTab('all');
+      setSearch('');
+    } catch {
+      toast.error('Erreur de chargement des bulletins.');
+    } finally {
+      setFetching(false);
+    }
+  };
 
   // --------------- Derived / filtered data ---------------
 
