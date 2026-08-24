@@ -75,6 +75,20 @@ export function simpleAverage(values: (string | number)[], decimals: number = 2,
     .toString();
 }
 
+/**
+ * Raw simple average — NO rounding applied.
+ * Returns full-precision decimal string.
+ * Use for intermediate calculations where rounding order is a business rule decision.
+ */
+export function rawSimpleAverage(values: (string | number)[]): string {
+  if (values.length === 0) return "0";
+  const sum = values.reduce(
+    (acc, val) => acc.plus(new Decimal(val)),
+    new Decimal(0)
+  );
+  return sum.div(new Decimal(values.length)).toString();
+}
+
 export function weightedAverage(
   values: { grade: string | number; weight: number }[],
   decimals: number = 2,
@@ -95,6 +109,28 @@ export function weightedAverage(
     .div(totalWeight)
     .toDecimalPlaces(decimals, ROUNDING_MAP[strategy])
     .toString();
+}
+
+/**
+ * Raw weighted average — NO rounding applied.
+ * Returns full-precision decimal string.
+ * Use for intermediate calculations where rounding order is a business rule decision.
+ */
+export function rawWeightedAverage(
+  values: { grade: string | number; weight: number }[]
+): string {
+  if (values.length === 0) return "0";
+  const totalWeight = values.reduce(
+    (acc, v) => acc.plus(new Decimal(v.weight)),
+    new Decimal(0)
+  );
+  if (totalWeight.isZero()) return "0";
+
+  const weightedSum = values.reduce(
+    (acc, v) => acc.plus(new Decimal(v.grade).times(new Decimal(v.weight))),
+    new Decimal(0)
+  );
+  return weightedSum.div(totalWeight).toString();
 }
 
 export function decimalMax(a: string | number, b: string | number): string {

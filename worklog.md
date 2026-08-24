@@ -100,3 +100,27 @@ Stage Summary:
 - M4 FUNCTIONAL: PASS
 - PRE-M5 FUNCTIONAL CLOSURE: PASS
 - M5 ELIGIBILITY: GO
+
+---
+Task ID: m5-competition-ranking-report-cards
+Agent: Main
+Task: M5 — Competition ranking, Policy C, report cards, lifecycle, RBAC
+
+Work Log:
+- Fixed ranking: dense → competition (rank = 1 + count of strictly higher)
+- Golden tests: 16,16,14,12 → 1,1,3,4
+- Added reportCardComponentItem table to schema
+- Created migration 0010_m5_report_cards.sql (dev only)
+- Created report-card.service.ts with full pipeline
+- Created API routes: /api/bulletins, /api/bulletins/[id], /api/bulletins/[id]/transition
+- RBAC: prepare (admin/teacher), validate/publish (admin/direction)
+- Lifecycle: DRAFT→READY→VALIDATED→PUBLISHED with immutability
+- 51 M5 tests passing (40 golden + 11 lifecycle)
+- 381 total tests passing, 0 failed
+- TypeScript: 0 errors
+- STOPPED before production (per owner instructions)
+
+Stage Summary:
+- Competition ranking: IMPLEMENTED
+- Report card service + API: DONE
+- STOPPED before production
