@@ -376,6 +376,22 @@ export async function generateReportCards(
     }
   }
 
+  // Audit: report card generation
+  if (created > 0 || updated > 0) {
+    const schoolId = slots[0]?.schoolId ?? null;
+    await logPedagogyAudit({
+      action: 'report_card_generated',
+      entity: 'report_card',
+      entityId: allResults[0]?.studentId ?? '',
+      schoolId,
+      newValue: JSON.stringify({ created, updated, classroomId, academicPeriodId, errors }),
+      actorId: actor.isGhost ? undefined : actor.id,
+      actorType: actor.isGhost ? 'ghost' : 'user',
+      actorIdentifier: actor.isGhost ? 'fantomas' : actor.id,
+      context: { classroomId, academicPeriodId, created, updated, errors },
+    });
+  }
+
   return { created, updated, errors };
 }
 
@@ -653,7 +669,7 @@ export async function transitionReportCard(
     action: `report_card_transition_${existing.status}_to_${newStatus}`,
     entity: 'report_card',
     entityId: id,
-    schoolId: '', // populated from enrollment if needed
+    schoolId: null,
     oldValue: JSON.stringify({ status: existing.status }),
     newValue: JSON.stringify({ status: newStatus }),
     actorId: actor.isGhost ? undefined : actor.id,
@@ -708,11 +724,11 @@ export async function bulkTransitionReportCards(
       await db.update(reportCard).set(updateData).where(eq(reportCard.id, card.id));
 
       // Audit (best-effort)
-      void logPedagogyAudit({
+      await logPedagogyAudit({
         action: `report_card_bulk_transition_${card.status}_to_${newStatus}`,
         entity: 'report_card',
         entityId: card.id,
-        schoolId: '',
+        schoolId: null,
         oldValue: JSON.stringify({ status: card.status }),
         newValue: JSON.stringify({ status: newStatus }),
         actorId: actor.isGhost ? undefined : actor.id,
@@ -759,7 +775,7 @@ export async function updateReportCardComments(
     action: 'report_card_update_comments',
     entity: 'report_card',
     entityId: id,
-    schoolId: '',
+    schoolId: null,
     newValue: JSON.stringify(comments),
     actorId: actor.isGhost ? undefined : actor.id,
     actorType: actor.isGhost ? 'ghost' : 'user',

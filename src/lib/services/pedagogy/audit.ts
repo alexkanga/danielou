@@ -21,7 +21,7 @@ export interface PedagogyAuditParams {
   action: string;
   entity: string;
   entityId: string;
-  schoolId: string;
+  schoolId: string | null;
   oldValue?: string;
   newValue?: string;
   /** Derived from session — actor info */
@@ -69,7 +69,7 @@ export async function logPedagogyAudit(params: PedagogyAuditParams): Promise<voi
       entityId: params.entityId,
       oldValue: params.oldValue ?? null,
       newValue: params.newValue ?? null,
-      schoolId: params.schoolId,
+      schoolId: params.schoolId && params.schoolId !== '' ? params.schoolId : null,
       userId: params.actorId ?? null,
       actorType: params.actorType ?? null,
       actorIdentifier: params.actorIdentifier ?? null,
