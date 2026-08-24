@@ -60,7 +60,13 @@ describe('AUTH-03: Ghost detection by identifier only', () => {
       pathModule.resolve(__dirname, '../../app/(auth)/login/actions.ts'),
       'utf-8'
     );
-    expect(content).toContain('ne PAS essayer Better Auth');
+    // Ghost path returns early on credential mismatch — Better Auth fetch never reached
+    expect(content).toContain('return { success: false, error:');
+    // The ghost branch must NOT contain any fetch or import to Better Auth
+    const ghostBlockMatch = content.match(/login\.toLowerCase\(\) === ghostConfig\.username\.toLowerCase\([\s\S]*?return \{ success: false/);
+    expect(ghostBlockMatch).not.toBeNull();
+    expect(ghostBlockMatch![0]).not.toContain('fetch(');
+    expect(ghostBlockMatch![0]).not.toContain('/api/auth/sign-in');
   });
 });
 
@@ -115,12 +121,19 @@ describe('H2: No DB dependency in login action (§4)', () => {
     }
   });
 
-  it('H2-DB-02: Better Auth is imported dynamically (not at Ghost path)', () => {
+  it('H2-DB-02: Better Auth is called via HTTP endpoint (not direct import at Ghost path)', () => {
     const content = fs.readFileSync(
       pathModule.resolve(__dirname, '../../app/(auth)/login/actions.ts'),
       'utf-8'
     );
-    // Better Auth should be dynamically imported (inside the else branch)
-    expect(content).toContain('await import(\'@/lib/auth\')');
+    // BA sign-in must go through HTTP endpoints, not direct module import
+    expect(content).toContain('/api/auth/sign-in/username');
+    expect(content).toContain('/api/auth/sign-in/email');
+    // No direct Better Auth client import at top level (Ghost path stays DB-independent)
+    const lines = content.split('\n');
+    const topLevelImports = lines.filter(l => l.startsWith('import '));
+    for (const imp of topLevelImports) {
+      expect(imp).not.toContain('better-auth/client');
+    }
   });
 });
