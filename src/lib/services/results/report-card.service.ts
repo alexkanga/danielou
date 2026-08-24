@@ -467,7 +467,7 @@ async function computeStudentResults(
           const grades = await db
             .select({ rawValue: grade.rawValue, status: grade.status })
             .from(grade)
-            .where(eq(grade.assessmentId, a.id));
+            .where(and(eq(grade.assessmentId, a.id), eq(grade.enrollmentId, enrollmentId)));
 
           const gradeInputs: GradeInput[] = grades.map(g => ({
             id: '',
@@ -513,7 +513,7 @@ async function computeStudentResults(
         const grades = await db
           .select({ rawValue: grade.rawValue, status: grade.status })
           .from(grade)
-          .where(eq(grade.assessmentId, a.id));
+          .where(and(eq(grade.assessmentId, a.id), eq(grade.enrollmentId, enrollmentId)));
 
         const gradeInputs: GradeInput[] = grades.map(g => ({
           id: '',
