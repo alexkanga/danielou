@@ -69,7 +69,9 @@ describe('§4 Teacher resource scope', () => {
     // Teacher cannot validate — proven by the permission matrix
     const result = authorize('none', 'teacher', 'school:report_cards:validate' as Permission);
     expect(result.allowed).toBe(false);
-    expect(result.reason).toBe('FORBIDDEN');
+    if (!result.allowed) {
+      expect(result.reason).toBe('FORBIDDEN');
+    }
   });
 });
 
