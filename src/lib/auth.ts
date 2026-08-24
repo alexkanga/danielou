@@ -46,6 +46,11 @@ export function getAuth() {
             unique: true,
             input: false,
           },
+          role: {
+            type: 'string',
+            required: false,
+            input: false,
+          },
           platformRole: {
             type: 'string',
             required: false,

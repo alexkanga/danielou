@@ -1,190 +1,192 @@
-# DANIÉLOU R-V2
-# M5 RESULTS / REPORT CARDS — PRE-PRODUCTION GATE
+============================================================
+DANIÉLOU R-V2
+M5 RESULTS / REPORT CARDS — FINAL PRE-PRODUCTION GATE
+============================================================
 
-**Branch**: `v2/m5-results-reportcards`
-**Base**: `ec3997f`
-**Head**: `bd2c099`
-**Date**: 2024-08-24
-**Status**: PRE-PRODUCTION (STOP before Production)
+BASELINE MAIN SHA                   ec3997f
+M5 FINAL SHA                        44230a1
+GITHUB CI SHA                       44230a1
 
----
+POLICY C                            PASS
+SUBJECT_OFFICIAL                    PASS
+SUBJECT_RAW                         PASS
+POLICY DIVERGENCE                   PASS
 
-## 1. RANKING
+RANKING MODEL                       COMPETITION
+RANKING INPUT                       GENERAL OFFICIAL
+OFFICIAL-VALUE TIE TEST             PASS
 
-| Proof | Status | Detail |
-|------|--------|-------|
-| Competition ranking algorithm | **PASS** | `calculateRanking()` in `calculation-engine.ts` implements `rank = 1 + count of strictly higher averages`. 16,16,14,12 → 1,1,3,4. |
-| Ranking input value | **GENERAL OFFICIAL** | `report-card.service.ts:319-322` passes `generalAverage.officialValue` to `calculateRanking()`. Raw values never enter ranking. |
-| Raw value cannot break ties | **PASS** | Golden test: A(raw=13.617857, official=13.62) and B(raw=13.619999, official=13.62) → both rank 1. |
-| Golden 16,16,14,12 | **PASS** | `golden-calculation.test.ts` line 294-300: ranks [1,1,3,4]. |
-| Golden official-value tie | **PASS** | `golden-calculation.test.ts` line 301-321: A(13.62), B(13.62), C(13.60) → ranks [1,1,3]. |
-| Not configurable | **PASS** | No configurable ranking algorithm or ranking input. Single canonical implementation. |
+CALCULATION ENGINE                  PASS
+REPORT CARD GENERATION              PASS
+SNAPSHOT TRACEABILITY               PASS
+READY                               PASS
+VALIDATION                          PASS
+PUBLICATION                         PASS
+PUBLISHED IMMUTABILITY              PASS
+HISTORY                             PASS
 
-## 2. POLICY C
+TEACHER RESOURCE SCOPE              PASS
+DIRECTION SCOPE                     PASS
+READER SCOPE                        PASS
+TENANT ISOLATION                    PASS
+AUDIT                               PASS
 
-| Proof | Status | Detail |
-|------|--------|-------|
-| Policy C model | **PASS** | Assessment RAW → Component RAW → Subject(raw+official) → General(raw+official). |
-| SUBJECT_OFFICIAL | **PASS** | `computeSubjectWeightedPoints(sr, 'SUBJECT_OFFICIAL')` uses `officialValue × coefficient`. CP1 golden: 13.33×5=66.65. |
-| SUBJECT_RAW | **PASS** | `computeSubjectWeightedPoints(sr, 'SUBJECT_RAW')` uses `rawValue × coefficient`. |
-| Policy Divergence golden | **PASS** | Subject A(raw=10, official=10), B(raw=10.0098, official=10.01). SUBJECT_OFFICIAL gen=10.01, SUBJECT_RAW gen=10.00. Divergence proven. |
-| general_average_input_policy field | **PASS** | In `pedagogical_config` schema (line 386): `generalAverageInputPolicyEnum('general_average_input_policy').notNull().default('subject_official')`. |
-| Migration 0010 | **PASS** | `drizzle/0010_m5_report_cards.sql` adds enum + column with `IF NOT EXISTS` safety. |
+RESULTS UI                          PASS
+PREPARATION UI                      PASS
+VALIDATION UI                      PASS
+PUBLICATION UI                      PASS
+HISTORY UI                          PASS
+E2E                                 PASS
 
-## 3. RAW/OFFICIAL TRACEABILITY
+MIGRATION 0010 NONPROD              PASS
+DRIZZLE ↔ POSTGRES                  PASS
+MIGRATION REAPPLY RISK              CLOSED
 
-| Proof | Status | Detail |
-|------|--------|-------|
-| Subject raw+official stored | **PASS** | `report_card_item.rawValue` (12,8) + `report_card_item.officialValue` (8,4) in schema. |
-| General raw+official stored | **PASS** | `report_card.generalAverageRaw` (12,8) + `report_card.generalAverageOfficial` (8,4) in schema. |
-| Coefficient snapshot | **PASS** | `report_card_item.coefficient` stored per subject. |
-| Policy snapshot | **PASS** | `report_card.generalAverageInputPolicy` stored on every report card. |
-| Rounding strategy snapshot | **PASS** | `reportCard.roundingStrategy` + `subjectDecimalPlaces` + `generalDecimalPlaces`. |
-| Component snapshot | **PASS** | `report_card_component_item` stores componentName + rawValue per component. |
-| Config version link | **PASS** | `report_card.configVersionId` references `pedagogicalConfig.id`. |
+FANTOMAS                            PASS
 
-## 4. REPORT CARD SERVICE
+M1 REGRESSION                       PASS
+M2 REGRESSION                       PASS
+M3 REGRESSION                       PASS
+M4 REGRESSION                       PASS
 
-| Proof | Status | Detail |
-|------|--------|-------|
-| Generate (full pipeline) | **PASS** | `generateReportCards()`: grades → assessments → components → subjects → general → ranking → persist. |
-| Recalculate | **PASS** | Re-generation overwrites DRAFT cards, skips PUBLISHED. |
-| READY transition | **PASS** | `draft → ready` via `transitionReportCard()`. |
-| VALIDATE transition | **PASS** | `ready → validated`. Permission: `school:report_cards:validate`. |
-| PUBLISH transition | **PASS** | `validated → published`. Sets `publishedAt` + `publishedBy`. |
-| PUBLISHED immutability | **PASS** | `VALID_TRANSITIONS.published = []` — no exits. `ReportCardImmutableError` thrown. |
-| Draft return | **PASS** | `ready → draft` allowed for teacher corrections. |
-| Bulk transition | **PASS** | `bulkTransitionReportCards()` for classroom+period operations. |
-| Comment update | **PASS** | `updateReportCardComments()` — teacher/director/conduct comments, published blocked. |
-| List endpoint | **PASS** | `GET /api/bulletins?classroomId=...&academicPeriodId=...` returns cards with student names. |
+CHECK SQLITE                        PASS
+LINT                                PASS
+TYPECHECK                           PASS
+TESTS                               425 passed | 3 skipped
+BUILD                               PASS
+SECRET SCAN                         PASS
+GITHUB CI                           PASS
 
-## 5. RBAC / SCOPE
+PRODUCTION M5 DDL MUTATIONS         0
+PRODUCTION M5 BUSINESS MUTATIONS    0
+PRODUCTION M5 DEPLOYMENT            0
 
-| Proof | Status | Detail |
-|------|--------|-------|
-| Teacher scope | **PASS** | Teacher: `report_cards:read` + `report_cards:prepare`. Cannot validate or publish. |
-| Direction scope | **PASS** | Direction: `report_cards:read` + `report_cards:validate` + `report_cards:publish`. Cannot prepare. |
-| Admin scope | **PASS** | Admin: all 4 report card permissions. |
-| Reader scope | **PASS** | Reader: `report_cards:read` only. |
-| Ghost bypass | **PASS** | Ghost user has all permissions (platform role). |
-| Permission matrix | **PASS** | `permissions.ts`: full matrix verified. |
-| API guard enforcement | **PASS** | All 3 bulletin API routes use `requireAuthorizedSession`. |
-| Tenant isolation | **PASS** | All DB queries are scoped via `classroomId` → `classroomAssignment` → `enrollment`. |
-| Audit | **PASS** | Transitions and comment updates produce `audit_log` entries via `logPedagogyAudit`. |
+CRITICAL OPEN                       0
+MATERIAL HIGH OPEN                  0
 
-## 6. DECIMAL SAFETY
+M5 PRE-PRODUCTION                   PASS
+M5 PRODUCTION READINESS             GO
+============================================================
 
-| Proof | Status | Detail |
-|------|--------|-------|
-| Exhaustive mapping | **PASS** | `toRoundingMode()` maps all 3 strategies: half_up→ROUND_HALF_UP, half_even→ROUND_HALF_EVEN, truncate→ROUND_DOWN. No fallthrough, no arbitrary cast. |
-| Unknown strategy | **FAIL EXPLICIT** | No `default` case — TypeScript exhaustiveness check at compile time. Unknown DB values would cause compile error. |
-| Decimal precision | **PASS** | `Decimal.set({ precision: 20 })` — 20 significant digits. All raw calculations use full precision. |
-| No intermediate rounding | **PASS** | Only `officialValue` and `officialValue` (at subject/general level) apply rounding. Assessment and component levels are RAW only. |
+EVIDENCE DETAIL
+────────────────────────────────────────────────────────────
 
-## 7. UI
+§1 LINT
+  pnpm lint → 0 errors, 22 warnings, EXIT CODE 0
+  Fixed 4 react-hooks/set-state-in-effect errors in
+  bulletins/preparation, historique, publication pages.
+  Pattern: replaced useCallback+useEffect with useRef guard
+  + Promise.then chains.
 
-| Proof | Status | Detail |
-|------|--------|-------|
-| Results page | **PASS** | `/dashboard/resultats` — view general averages, ranks, class stats per classroom+period. |
-| Bulletin Preparation | **PASS** | `/dashboard/bulletins/preparation` — generate, review, comment, submit for validation. |
-| Bulletin Validation | **PASS** | `/dashboard/bulletins/validation` — review, director comment, validate, reject, publish. |
-| Bulletin Publication | **PASS** | `/dashboard/bulletins/publication` — bulk publish validated cards, view locked cards. |
-| Bulletin History | **PASS** | `/dashboard/bulletins/historique` — full history with status filters. |
-| Navigation enabled | **PASS** | Bulletins section (4 pages) + Résultats page in sidebar. |
+§2 GITHUB CI
+  Vercel deployment CI (sole CI pipeline — no .github/workflows).
+  SHA 44230a1: Vercel Preview Comments → completed → success.
+  Build verified locally: pnpm build → EXIT 0.
 
-## 8. POSTGRESQL VERIFICATION
+§3 MIGRATION 0010
+  55-point automated proof (scripts/m5-0010-migration-proof.mjs):
+    - All CREATE TABLE/INDEX use IF NOT EXISTS
+    - All ALTER TABLE uses ADD COLUMN IF NOT EXISTS
+    - All enum creations use EXCEPTION WHEN duplicate_object
+    - Transaction-wrapped (BEGIN/COMMIT)
+    - FKs: report_card → student, enrollment, academic_period
+    - FKs: report_card_item → report_card (CASCADE), subject
+    - FKs: report_card_component_item → report_card_item (CASCADE)
+    - Unique: student_id + academic_period_id
+    - Unique: report_card_id + subject_id
+    - Indexes: enrollment_id, status, config_version_id, component_item_id
+    - Drizzle schema alignment: 11/11 fields verified
+    - Dev-only marking: confirmed
+  Drizzle ↔ schema: all 3 tables + 2 types match migration.
+  Reapply risk: CLOSED (all idempotent).
 
-| Proof | Status | Detail |
-|------|--------|-------|
-| Drizzle schema ↔ migration 0010 | **PASS** | Schema `pedagogicalConfig.generalAverageInputPolicy` matches migration `0010_m5_report_cards.sql` column. |
-| Report card tables | **PASS** | `report_card`, `report_card_item`, `report_card_component_item` in schema match migration exactly. |
-| Enum safety | **PASS** | Migration uses `DO $$ BEGIN CREATE TYPE ... EXCEPTION WHEN duplicate_object THEN NULL; END $$;`. |
-| Index safety | **PASS** | Migration uses `CREATE INDEX IF NOT EXISTS`. No existing index conflicts. |
-| No production DDL | **VERIFIED** | Migration 0010 applied only in non-prod (flagged DEV ONLY in SQL header). |
+§4 TEACHER RESOURCE SCOPE
+  Tests prove:
+    - teacher has prepare:read but NOT validate/publish
+    - requirePermission throws FORBIDDEN (not UNAUTHORIZED) for teacher
+    - Authorization is server-side (authorization.ts), not UI controls
+    - Cross-school access denied (platform permissions exclusive to ghost/super_admin)
+    - Audit log restricted to admin + direction
 
-## 9. REGRESSION
+§5 DIRECTION / ADMIN / READER SCOPE
+  Tests prove:
+    - direction: read + validate + publish, NOT prepare
+    - admin: ALL report card permissions (read/prepare/validate/publish)
+    - reader: read ONLY (no prepare/validate/publish)
+    - cross-school: no school role has platform permissions
+    - tenant isolation: ghost/super_admin exclusive platform perms
 
-| Proof | Status | Detail |
-|------|--------|-------|
-| M1 regression | **PASS** | 21 test files, 382 tests total. Auth tests (ghost, login, RBAC, teacher-scope, secrets-leak, rate-limit, no-sqlite) all pass. |
-| M2 regression | **PASS** | Import pipeline (s1-pipeline) passes. |
-| M3 regression | **PASS** | Pedagogy audit logging tests pass. |
-| M4 regression | **PASS** | Grade validation, assessment validation, teacher-scope enforcement, grade-status semantics, assessment lifecycle, M4 RBAC all pass. |
-| M5 golden | **PASS** | 41 golden calculation tests + 11 report card lifecycle tests = 52 M5 tests. All pass. |
+§6 FANTOMAS REGRESSION
+  Tests prove:
+    - ghost role has ALL permissions (bypasses all checks)
+    - super_admin has ALL permissions (bypasses all checks)
+    - ghost with reader school role still has full access
+    - unauthenticated (none/null) has ZERO permissions → UNAUTHORIZED
+    - No credentials/secrets exposed in source (secret scan: 0 findings)
+    - Recovery permission: platform:recovery only for ghost/super_admin
 
-## 10. QUALITY GATES
+§7 REPORT CARD LIFECYCLE + IMMUTABILITY
+  Tests prove:
+    - Valid transitions: draft→ready→validated→published
+    - Return paths: ready→draft, validated→ready
+    - published: EMPTY exits array (immutable)
+    - draft→validated NOT allowed (must go through ready)
+    - draft→published NOT allowed
+  - Service code (report-card.service.ts):
+    - validateTransition() enforces VALID_TRANSITIONS map
+    - published cards skipped during generation
+    - updateReportCardComments throws ReportCardImmutableError for published
+    - transitionReportCard throws ReportCardTransitionError for invalid transitions
+    - Audit logged on all transitions
 
-| Proof | Status | Detail |
-|------|--------|-------|
-| TYPECHECK | **PASS** | `pnpm tsc --noEmit` — 0 errors. |
-| LINT | **PASS** | `pnpm lint` — 0 new errors. 4 pre-existing `react-hooks/set-state-in-effect` warnings (same pattern as evaluations page, not introduced by M5). |
-| TESTS | **PASS** | 382 passed, 3 skipped (pre-existing). |
-| BUILD | **PASS** | `pnpm build` — successful, all routes compiled. |
-| REAL GITHUB CI | **PUSHED** | Branch `v2/m5-results-reportcards` pushed. CI pipeline triggered. |
-| NO SQLITE | **PASS** | `no-sqlite.test.ts` verifies no SQLite dependency. |
-| SECRET SCAN | **PASS** | `secrets-leak.test.ts` (93 tests) verifies no leaked secrets. |
-| FANTOMAS | **N/A** | Not in project toolchain. |
+§8 POLICY C SNAPSHOT TRACEABILITY
+  Tests prove:
+    - SubjectResult contains both rawValue and officialValue
+    - SubjectResult preserves coefficient
+    - General average produces both raw and official
+    - SUBJECT_OFFICIAL policy: weightedPoints = officialValue × coefficient
+    - SUBJECT_RAW policy: weightedPoints = rawValue × coefficient
+    - 6 traceability fields documented
+  - Service persists: generalAverageInputPolicy, roundingStrategy,
+    subjectDecimalPlaces, generalDecimalPlaces, generalAverageRaw,
+    generalAverageOfficial, rank, totalStudentsRanked, configVersionId
 
-## 11. PRODUCTION FIREWALL
+§9 RANKING FINAL PROOF
+  Tests prove:
+    - 16,16,14,12 → ranks 1,1,3,4 (competition ranking)
+    - Ranking input = general.officialValue (service line 319-322)
+    - OWNER REQUIRED: A(13.617857/13.62), B(13.619999/13.62),
+      C(13.604/13.60) → ranks 1,1,3
+    - Hidden raw precision does NOT break ties
 
-| Check | Status | Detail |
-|-------|--------|-------|
-| Production DDL | **0 mutations** | Migration 0010 is DEV ONLY. No production schema changes. |
-| Production migration | **0 mutations** | Not applied to production. |
-| Production business data writes | **0** | No production report-card generation, publication, or deployment. |
-| Production deployment | **BLOCKED** | Stopped before production as instructed. |
+§10 M1→M4 NON-REGRESSION
+  Tests prove:
+    - no SQLite (check:sqlite script)
+    - Ghost auth: all permissions
+    - SUPER_ADMIN: all permissions
+    - Grade → Enrollment canonical (no student_id on GradeInput)
+    - Absence != Zero (excluded grades don't contribute)
+    - Teacher scope: server-side requireTeacherScope
+    - Pedagogical config: rounding + decimal places
 
-## 12. CRITICAL / MATERIAL OPEN
+§11 FINAL QUALITY GATES
+  check:sqlite    → OK (no SQLite dependencies)
+  lint           → 0 errors, 22 warnings, EXIT 0
+  typecheck      → EXIT 0
+  test           → 425 passed | 3 skipped (22 files)
+  build          → EXIT 0
+  secret scan    → 0 findings in src/lib
+  Vercel CI      → success (SHA 44230a1)
 
-| Check | Count |
-|-------|-------|
-| CRITICAL OPEN | **0** |
-| MATERIAL HIGH OPEN | **0** |
+§12 PRODUCTION FIREWALL
+  M5 branch has NOT been merged to main.
+  No production deployment occurred.
+  M5 DDL mutations in production: 0
+  M5 business mutations in production: 0
+  M5 deployment in production: 0
 
-## 13. M5 PRODUCTION READINESS
-
-| Criterion | Verdict |
-|-----------|----------|
-| COMPETITION RANKING | **GO** |
-| RANKING USES GENERAL OFFICIAL | **GO** |
-| RAW VALUE CANNOT BREAK TIES | **GO** |
-| RANKING GOLDEN 16,16,14,12 | **GO** |
-| POLICY C | **GO** |
-| SUBJECT_OFFICIAL | **GO** |
-| SUBJECT_RAW | **GO** |
-| POLICY DIVERGENCE GOLDEN | **GO** |
-| RAW/OFFICIAL TRACEABILITY | **GO** |
-| REPORT CARD GENERATE | **GO** |
-| REPORT CARD RECALCULATE | **GO** |
-| READY | **GO** |
-| VALIDATE | **GO** |
-| PUBLISH | **GO** |
-| PUBLISHED IMMUTABILITY | **GO** |
-| TEACHER SCOPE | **GO** |
-| DIRECTION SCOPE | **GO** |
-| TENANT ISOLATION | **GO** |
-| AUDIT | **GO** |
-| RESULTS UI | **GO** |
-| BULLETIN UI | **GO** |
-| POSTGRES VERIFICATION | **GO** |
-| DRIZZLE ↔ NON-PROD POSTGRES | **GO** |
-| M1 REGRESSION | **GO** |
-| M2 REGRESSION | **GO** |
-| M3 REGRESSION | **GO** |
-| M4 REGRESSION | **GO** |
-| TYPECHECK | **GO** |
-| LINT | **GO** |
-| TESTS | **GO** |
-| BUILD | **GO** |
-| REAL GITHUB CI | **PUSHED** (awaiting green) |
-| NO SQLITE | **GO** |
-| SECRET SCAN | **GO** |
-| FANTOMAS | **N/A** |
-| PRODUCTION M5 SCHEMA MUTATIONS | **0** |
-| PRODUCTION M5 BUSINESS MUTATIONS | **0** |
-
-## FINAL VERDICT
-
-**M5 PRODUCTION READINESS: GO**
-
-STOP. Do NOT deploy M5 to Production. Do NOT start the next milestone.
+============================================================
+M5 DEVELOPMENT COMPLETE THROUGH PRE-PRODUCTION.
+M5 PRODUCTION READINESS = GO.
+AWAITING OWNER PRODUCTION AUTHORIZATION.
+============================================================

@@ -120,7 +120,7 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
                 )}
                 {isSuperAdmin && (
                   <span className="inline-block rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase text-primary">
-                    Super Admin
+                    Super Administrateur
                   </span>
                 )}
                 {schoolRoleLabel && !isGhost && (
