@@ -42,7 +42,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 const PLATFORM_ROLE_LABELS: Record<string, string> = {
   ghost: 'Ghost',
-  super_admin: 'Super Admin',
+  super_admin: 'Super Administrateur',
   none: 'Aucun',
 };
 
