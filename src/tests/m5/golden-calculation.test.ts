@@ -298,6 +298,27 @@ describe('Ranking (competition)', () => {
     ]);
     expect(r.map(x=>x.rank)).toEqual([1,1,3,4]);
   });
+  it('official-value tie: hidden raw precision MUST NOT break ties', () => {
+    // OWNER DECISION — RANKING INPUT VALUE = GENERAL OFFICIAL
+    // Student A: raw 13.617857, official 13.62
+    // Student B: raw 13.619999, official 13.62
+    // Student C: raw 13.604000, official 13.60
+    // Ranking uses officialValue → A and B are TIED at 13.62
+    const r = calculateRanking([
+      {studentId:'A', average:'13.62'}, // official value, raw was 13.617857
+      {studentId:'B', average:'13.62'}, // official value, raw was 13.619999
+      {studentId:'C', average:'13.60'}, // official value, raw was 13.604000
+    ]);
+    expect(r).toHaveLength(3);
+    // A and B share rank 1 (same official average 13.62)
+    expect(r[0].rank).toBe(1);
+    expect(r[0].tiedCount).toBe(2);
+    expect(r[1].rank).toBe(1);
+    expect(r[1].tiedCount).toBe(2);
+    // C has 2 students with strictly higher average → rank 3
+    expect(r[2].rank).toBe(3);
+    expect(r[2].tiedCount).toBe(1);
+  });
 });
 
 // ─────────────────────────────────────────────

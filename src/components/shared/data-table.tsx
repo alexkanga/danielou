@@ -18,20 +18,21 @@ type Column<T> = {
 interface DataTableProps<T> {
   columns: Column<T>[];
   data: T[];
-  pagination: PaginatedResult<T>['pagination'];
-  onPageChange: (page: number) => void;
+  pagination?: PaginatedResult<T>['pagination'];
+  onPageChange?: (page: number) => void;
   onSearch?: (search: string) => void;
   searchable?: boolean;
   searchPlaceholder?: string;
   actions?: (item: T) => React.ReactNode;
   emptyMessage?: string;
   getId: (item: T) => string;
+  onRowClick?: (item: T) => void;
 }
 
 export function DataTable<T>({
   columns, data, pagination, onPageChange,
   onSearch, searchable = false, searchPlaceholder = 'Rechercher...',
-  actions, emptyMessage = 'Aucun élément trouvé', getId,
+  actions, emptyMessage = 'Aucun élément trouvé', getId, onRowClick,
 }: DataTableProps<T>) {
   const [searchInput, setSearchInput] = useState('');
 
@@ -40,7 +41,7 @@ export function DataTable<T>({
     onSearch?.(value);
   };
 
-  const { page, totalPages } = pagination;
+  const { page = 1, totalPages = 1, totalItems = 0 } = pagination ?? {};
   const canPrev = page > 1;
   const canNext = page < totalPages;
 
@@ -80,7 +81,7 @@ export function DataTable<T>({
               </TableRow>
             ) : (
               data.map((item) => (
-                <TableRow key={getId(item)}>
+                <TableRow key={getId(item)} className={onRowClick ? 'cursor-pointer' : undefined} onClick={onRowClick ? () => onRowClick(item) : undefined}>
                   {columns.map((col) => (
                     <TableCell key={col.key}>
                       {col.render
@@ -99,28 +100,30 @@ export function DataTable<T>({
       </div>
 
       {/* Pagination */}
+      {pagination && (
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">
-          {pagination.totalItems} élément{pagination.totalItems > 1 ? 's' : ''} au total
+          {totalItems} élément{totalItems > 1 ? 's' : ''} au total
         </span>
         <div className="flex items-center gap-1">
-          <Button variant="outline" size="icon" className="h-8 w-8" disabled={!canPrev} onClick={() => onPageChange(1)}>
+          <Button variant="outline" size="icon" className="h-8 w-8" disabled={!canPrev} onClick={() => onPageChange?.(1)}>
             <ChevronsLeft className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="icon" className="h-8 w-8" disabled={!canPrev} onClick={() => onPageChange(page - 1)}>
+          <Button variant="outline" size="icon" className="h-8 w-8" disabled={!canPrev} onClick={() => onPageChange?.(page - 1)}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="mx-2 text-muted-foreground">
             {page} / {totalPages}
           </span>
-          <Button variant="outline" size="icon" className="h-8 w-8" disabled={!canNext} onClick={() => onPageChange(page + 1)}>
+          <Button variant="outline" size="icon" className="h-8 w-8" disabled={!canNext} onClick={() => onPageChange?.(page + 1)}>
             <ChevronRight className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="icon" className="h-8 w-8" disabled={!canNext} onClick={() => onPageChange(totalPages)}>
+          <Button variant="outline" size="icon" className="h-8 w-8" disabled={!canNext} onClick={() => onPageChange?.(totalPages)}>
             <ChevronsRight className="h-4 w-4" />
           </Button>
         </div>
       </div>
+      )}
     </div>
   );
 }

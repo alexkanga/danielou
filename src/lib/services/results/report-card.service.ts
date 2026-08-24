@@ -16,6 +16,7 @@
 
 import { eq, and } from 'drizzle-orm';
 import { db } from '@/lib/db';
+import { logPedagogyAudit } from '@/lib/services/pedagogy/audit';
 import {
   reportCard,
   reportCardItem,
@@ -31,6 +32,7 @@ import {
   subjectComponent,
   classroomAssignment,
   classroom,
+  student,
 } from '@/lib/db/schema';
 import type {
   ReportCard,
@@ -51,7 +53,6 @@ import type {
   GradeInput,
   AssessmentResult,
   ComponentResult,
-  SubjectInput,
   SubjectResult,
   GeneralAverageOutput,
   RankingEntry,
@@ -166,8 +167,7 @@ async function getStudentSlots(
   if (assignments.length === 0) return [];
 
   // 4. Get active enrollments with studentId + schoolId
-  const enrollmentIds = assignments.map(a => a.enrollmentId);
- const enrollmentRows = await db
+  const enrollmentRows = await db
     .select({ id: enrollment.id, studentId: enrollment.studentId, schoolId: enrollment.schoolId })
     .from(enrollment)
     .where(eq(enrollment.status, 'active'));
@@ -588,6 +588,45 @@ export async function getReportCardByStudentPeriod(
   return getReportCard(card.id);
 }
 
+/**
+ * List report cards for a classroom + academic period.
+ * Joins student for name resolution.
+ */
+export async function listReportCards(
+  classroomId: string,
+  academicPeriodId: string,
+): Promise<Array<ReportCard & { studentName: string }>> {
+  // Resolve enrollment IDs for this classroom
+  const assignments = await db
+    .select({ enrollmentId: classroomAssignment.enrollmentId })
+    .from(classroomAssignment)
+    .where(and(eq(classroomAssignment.classroomId, classroomId), eq(classroomAssignment.status, 'active')));
+
+  const enrIds = assignments.map(a => a.enrollmentId);
+  if (enrIds.length === 0) return [];
+
+  // Get all report cards for these enrollments + period
+  const allCards: Array<ReportCard & { studentName: string }> = [];
+  for (const enrId of enrIds) {
+    const batch = await db
+      .select()
+      .from(reportCard)
+      .where(and(eq(reportCard.academicPeriodId, academicPeriodId), eq(reportCard.enrollmentId, enrId)));
+
+    for (const card of batch) {
+      const [stu] = await db
+        .select({ firstName: student.firstName, lastName: student.lastName })
+        .from(student)
+        .where(eq(student.id, card.studentId))
+        .limit(1);
+      const studentName = stu ? `${stu.lastName} ${stu.firstName}` : 'Inconnu';
+      allCards.push({ ...card, studentName });
+    }
+  }
+
+  return allCards;
+}
+
 // ─────────────────────────────────────────────
 // 4. LIFECYCLE TRANSITIONS
 // ─────────────────────────────────────────────
@@ -608,6 +647,21 @@ export async function transitionReportCard(
   }
 
   const [updated] = await db.update(reportCard).set(updateData).where(eq(reportCard.id, id)).returning();
+
+  // Audit
+  await logPedagogyAudit({
+    action: `report_card_transition_${existing.status}_to_${newStatus}`,
+    entity: 'report_card',
+    entityId: id,
+    schoolId: '', // populated from enrollment if needed
+    oldValue: JSON.stringify({ status: existing.status }),
+    newValue: JSON.stringify({ status: newStatus }),
+    actorId: actor.isGhost ? undefined : actor.id,
+    actorType: actor.isGhost ? 'ghost' : 'user',
+    actorIdentifier: actor.isGhost ? 'fantomas' : actor.id,
+    context: { transition: `${existing.status}→${newStatus}`, publishedAt: updateData.publishedAt ?? null },
+  });
+
   return updated;
 }
 
@@ -630,12 +684,7 @@ export async function bulkTransitionReportCards(
   if (enrIds.length === 0) return { transitioned: 0, skipped: 0 };
 
   // Get report cards for these enrollments + period
-  const cards = await db
-    .select({ id: reportCard.id, status: reportCard.status })
-    .from(reportCard)
-    .where(and(eq(reportCard.academicPeriodId, academicPeriodId), eq(reportCard.enrollmentId, enrIds[0])));
-
-  // More precise: query all cards where enrollmentId IN (...) — use loop for neon compatibility
+  // Query all cards where enrollmentId IN (...) — use loop for neon compatibility
   const allCards = [];
   for (const enrId of enrIds) {
     const batch = await db
@@ -657,6 +706,21 @@ export async function bulkTransitionReportCards(
         updateData.publishedBy = actor.id;
       }
       await db.update(reportCard).set(updateData).where(eq(reportCard.id, card.id));
+
+      // Audit (best-effort)
+      void logPedagogyAudit({
+        action: `report_card_bulk_transition_${card.status}_to_${newStatus}`,
+        entity: 'report_card',
+        entityId: card.id,
+        schoolId: '',
+        oldValue: JSON.stringify({ status: card.status }),
+        newValue: JSON.stringify({ status: newStatus }),
+        actorId: actor.isGhost ? undefined : actor.id,
+        actorType: actor.isGhost ? 'ghost' : 'user',
+        actorIdentifier: actor.isGhost ? 'fantomas' : actor.id,
+        context: { bulk: true, classroomId, academicPeriodId },
+      });
+
       transitioned++;
     } catch {
       skipped++;
@@ -689,6 +753,18 @@ export async function updateReportCardComments(
     .set(comments)
     .where(eq(reportCard.id, id))
     .returning();
+
+  // Audit
+  await logPedagogyAudit({
+    action: 'report_card_update_comments',
+    entity: 'report_card',
+    entityId: id,
+    schoolId: '',
+    newValue: JSON.stringify(comments),
+    actorId: actor.isGhost ? undefined : actor.id,
+    actorType: actor.isGhost ? 'ghost' : 'user',
+    actorIdentifier: actor.isGhost ? 'fantomas' : actor.id,
+  });
 
   return updated;
 }

@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { requireAuthorizedSession } from '@/lib/server-guards';
-import { generateReportCards } from '@/lib/services/results/report-card.service';
+import { generateReportCards, listReportCards } from '@/lib/services/results/report-card.service';
 import { ReportCardError } from '@/lib/services/results/report-card.service';
 
 type Permission = import('@/lib/types/rbac').Permission;
@@ -19,6 +19,29 @@ function reportCardErrorToResponse(error: unknown): Response {
   }
   console.error('[bulletins]', error);
   return Response.json({ error: 'Erreur interne du serveur.' }, { status: 500 });
+}
+
+/**
+ * GET /api/bulletins?classroomId=...&academicPeriodId=...
+ * List report cards for a classroom + period.
+ * Permission: school:report_cards:read
+ */
+export async function GET(request: NextRequest) {
+  try {
+    await requireAuthorizedSession('school:report_cards:read' as Permission);
+    const { searchParams } = new URL(request.url);
+    const classroomId = searchParams.get('classroomId');
+    const academicPeriodId = searchParams.get('academicPeriodId');
+
+    if (!classroomId || !academicPeriodId) {
+      return Response.json({ error: 'classroomId et academicPeriodId sont requis.' }, { status: 400 });
+    }
+
+    const cards = await listReportCards(classroomId, academicPeriodId);
+    return Response.json(cards);
+  } catch (error) {
+    return reportCardErrorToResponse(error);
+  }
 }
 
 /**

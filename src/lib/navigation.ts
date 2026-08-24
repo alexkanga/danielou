@@ -109,25 +109,23 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: 'PenTool',
         requiredPermissions: ['school:grades:manage'],
       },
-      // FUTURE_M5: Résultats — not yet implemented
-      // {
-      //   label: 'Résultats',
-      //   href: '/dashboard/resultats',
-      //   icon: 'BarChart3',
-      //   requiredPermissions: ['school:grades:read'],
-      // },
+      {
+        label: 'Résultats',
+        href: '/dashboard/resultats',
+        icon: 'BarChart3',
+        requiredPermissions: ['school:grades:read'],
+      },
     ],
   },
-  // FUTURE_M5: Bulletins — not yet implemented
-  // {
-  //   title: 'Bulletins',
-  //   items: [
-  //     { label: 'Préparation', href: '/dashboard/bulletins/preparation', icon: 'ScrollText', requiredPermissions: ['school:report_cards:prepare'] },
-  //     { label: 'Validation', href: '/dashboard/bulletins/validation', icon: 'CheckCircle', requiredPermissions: ['school:report_cards:validate'] },
-  //     { label: 'Publication', href: '/dashboard/bulletins/publication', icon: 'Send', requiredPermissions: ['school:report_cards:publish'] },
-  //     { label: 'Historique', href: '/dashboard/bulletins/historique', icon: 'History', requiredPermissions: ['school:report_cards:read'] },
-  //   ],
-  // },
+  {
+    title: 'Bulletins',
+    items: [
+      { label: 'Préparation', href: '/dashboard/bulletins/preparation', icon: 'ScrollText', requiredPermissions: ['school:report_cards:prepare'] },
+      { label: 'Validation', href: '/dashboard/bulletins/validation', icon: 'CheckCircle', requiredPermissions: ['school:report_cards:validate'] },
+      { label: 'Publication', href: '/dashboard/bulletins/publication', icon: 'Send', requiredPermissions: ['school:report_cards:publish'] },
+      { label: 'Historique', href: '/dashboard/bulletins/historique', icon: 'History', requiredPermissions: ['school:report_cards:read'] },
+    ],
+  },
   // FUTURE: Statistiques — not yet implemented
   // {
   //   title: 'Analyse',
