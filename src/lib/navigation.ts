@@ -124,15 +124,15 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: 'Validation', href: '/dashboard/bulletins/validation', icon: 'CheckCircle', requiredPermissions: ['school:report_cards:validate'] },
       { label: 'Publication', href: '/dashboard/bulletins/publication', icon: 'Send', requiredPermissions: ['school:report_cards:publish'] },
       { label: 'Historique', href: '/dashboard/bulletins/historique', icon: 'History', requiredPermissions: ['school:report_cards:read'] },
+      { label: 'Impression / Exports', href: '/dashboard/bulletins/impression', icon: 'Printer', requiredPermissions: ['school:report_cards:read'] },
     ],
   },
-  // FUTURE: Statistiques — not yet implemented
-  // {
-  //   title: 'Analyse',
-  //   items: [
-  //     { label: 'Statistiques', href: '/dashboard/statistiques', icon: 'TrendingUp', requiredPermissions: ['school:statistics:read'] },
-  //   ],
-  // },
+  {
+    title: 'Analyse',
+    items: [
+      { label: 'Statistiques', href: '/dashboard/statistiques', icon: 'TrendingUp', requiredPermissions: ['school:statistics:read'] },
+    ],
+  },
   {
     title: 'Système',
     items: [

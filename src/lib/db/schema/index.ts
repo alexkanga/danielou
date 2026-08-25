@@ -309,6 +309,7 @@ export const reportCard = pgTable('report_card', {
   conductComment: text('conduct_comment'),
   teacherComment: text('teacher_comment'),
   directorComment: text('director_comment'),
+  generalAppreciation: text('general_appreciation'),
   promotionDecision: promotionDecisionEnum('promotion_decision'),
   publishedAt: timestamp('published_at', { withTimezone: true }),
   publishedBy: uuid('published_by'),
