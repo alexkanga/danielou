@@ -4,10 +4,9 @@ import { db } from '@/lib/db';
 import { academicYear, academicPeriod, classroom, enrollment } from '@/lib/db/schema';
 import { requireAuthorizedSession } from '@/lib/server-guards';
 import { updateAcademicYearSchema } from '@/lib/validations/scolarite';
-import { handleApiError } from '@/lib/data-access/get-school';
-import type { AcademicPeriod } from '@/lib/db/schema';
+import { handleApiError, getSchoolId } from '@/lib/data-access/get-school';
 
-// GET /api/annees-scolaires/[id] — Get a single academic year with its periods
+// GET /api/annees-scolaires/[id]
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -21,19 +20,13 @@ export async function GET(
       return NextResponse.json({ error: 'Année scolaire introuvable.' }, { status: 404 });
     }
 
-    const periods: AcademicPeriod[] = await db
-      .select()
-      .from(academicPeriod)
-      .where(eq(academicPeriod.academicYearId, id))
-      .orderBy(academicPeriod.sortOrder);
-
-    return NextResponse.json({ ...found, periods });
+    return NextResponse.json(found);
   } catch (error) {
     return handleApiError(error, 'GET /api/annees-scolaires/[id]') as NextResponse;
   }
 }
 
-// PUT /api/annees-scolaires/[id] — Update an academic year
+// PUT /api/annees-scolaires/[id]
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -60,12 +53,13 @@ export async function PUT(
     const updates: Record<string, unknown> = { ...parsed.data };
 
     if (parsed.data.status === 'active') {
+      const schoolId = await getSchoolId();
       await db
         .update(academicYear)
         .set({ status: 'closed' })
         .where(
           and(
-            eq(academicYear.schoolId, existing.schoolId),
+            eq(academicYear.schoolId, schoolId),
             eq(academicYear.status, 'active'),
           ),
         );
@@ -83,7 +77,7 @@ export async function PUT(
   }
 }
 
-// DELETE /api/annees-scolaires/[id] — Delete an academic year
+// DELETE /api/annees-scolaires/[id]
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -97,6 +91,21 @@ export async function DELETE(
       return NextResponse.json({ error: 'Année scolaire introuvable.' }, { status: 404 });
     }
 
+    // Check linked periods
+    const linkedPeriods = await db
+      .select({ id: academicPeriod.id })
+      .from(academicPeriod)
+      .where(eq(academicPeriod.academicYearId, id))
+      .limit(1);
+
+    if (linkedPeriods.length > 0) {
+      return NextResponse.json(
+        { error: 'Cette année scolaire contient des périodes d\'évaluation et ne peut pas être supprimée.' },
+        { status: 409 },
+      );
+    }
+
+    // Check linked classrooms
     const linkedClassrooms = await db
       .select({ id: classroom.id })
       .from(classroom)
@@ -110,6 +119,7 @@ export async function DELETE(
       );
     }
 
+    // Check linked enrollments
     const linkedEnrollments = await db
       .select({ id: enrollment.id })
       .from(enrollment)

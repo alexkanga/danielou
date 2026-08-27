@@ -34,6 +34,12 @@ export const NAV_SECTIONS: NavSection[] = [
         requiredPermissions: ['school:academic_years:read'],
       },
       {
+        label: 'Périodes',
+        href: '/dashboard/periodes',
+        icon: 'Clock',
+        requiredPermissions: ['school:academic_years:read'],
+      },
+      {
         label: 'Niveaux',
         href: '/dashboard/niveaux',
         icon: 'GraduationCap',
@@ -211,6 +217,13 @@ export const BREADCRUMB_MAP: Array<{
     items: [
       { href: '/dashboard', label: 'Accueil', requiredPermissions: [] },
       { href: '/dashboard/annees-scolaires', label: 'Années scolaires', requiredPermissions: ['school:academic_years:read'] },
+    ],
+  },
+  {
+    prefix: '/dashboard/periodes',
+    items: [
+      { href: '/dashboard', label: 'Accueil', requiredPermissions: [] },
+      { href: '/dashboard/periodes', label: 'Périodes d\'évaluation', requiredPermissions: ['school:academic_years:read'] },
     ],
   },
   {
