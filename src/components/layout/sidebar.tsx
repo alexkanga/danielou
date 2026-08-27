@@ -28,6 +28,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Database,
+  Clock,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -57,6 +58,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Settings,
   FileSearch,
   Database,
+  Clock,
 };
 
 function getIcon(name: string): LucideIcon {

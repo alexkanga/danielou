@@ -7,6 +7,7 @@ import { sql } from 'drizzle-orm';
 
 export const academicYearStatusEnum = pgEnum('academic_year_status', ['preparation', 'active', 'closed']);
 export const periodStatusEnum = pgEnum('period_status', ['draft', 'open', 'closed']);
+export const periodTypeEnum = pgEnum('period_type', ['trimester', 'semester', 'composition', 'passage', 'other']);
 export const enrollmentStatusEnum = pgEnum('enrollment_status', ['active', 'completed', 'transferred_out', 'withdrawn', 'cancelled']);
 export const classroomAssignmentStatusEnum = pgEnum('classroom_assignment_status', ['active', 'transferred', 'completed', 'withdrawn', 'cancelled']);
 export const gradeStatusEnum = pgEnum('grade_status', ['graded', 'absent_excused', 'absent_unexcused', 'exempt', 'not_evaluated', 'pending']);
@@ -68,17 +69,22 @@ export const academicYear = pgTable('academic_year', {
 
 export const academicPeriod = pgTable('academic_period', {
   id: uuid('id').primaryKey().defaultRandom(),
-  academicYearId: uuid('academic_year_id').notNull().references(() => academicYear.id, { onDelete: 'cascade' }),
+  academicYearId: uuid('academic_year_id').notNull().references(() => academicYear.id, { onDelete: 'restrict' }),
+  levelId: uuid('level_id').references(() => level.id, { onDelete: 'restrict' }),
   name: text('name').notNull(),
+  periodType: periodTypeEnum('period_type').notNull().default('other'),
   sortOrder: integer('sort_order').notNull().default(1),
-  startDate: date('start_date').notNull(),
-  endDate: date('end_date').notNull(),
+  startDate: date('start_date'),
+  endDate: date('end_date'),
   status: periodStatusEnum('status').notNull().default('draft'),
   ...auditColumns,
 }, (table) => [
-  uniqueIndex('up_year_name').on(table.academicYearId, table.name),
   index('ap_year_idx').on(table.academicYearId),
+  index('ap_level_idx').on(table.levelId),
   index('ap_status_idx').on(table.status),
+  index('ap_year_level_idx').on(table.academicYearId, table.levelId),
+  check('ap_sort_order_check', sql`\`sort_order\` >= 1`),
+  check('ap_dates_check', sql`\`start_date\` IS NULL OR \`end_date\` IS NULL OR \`start_date\` <= \`end_date\``),
 ]);
 
 // ==============================================

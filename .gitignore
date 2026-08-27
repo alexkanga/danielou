@@ -59,3 +59,6 @@ drizzle/meta/
 
 # S1 import — private student data (NEVER commit)
 data/private/
+
+# R-PERIODS-01 — private student data (NEVER commit)
+.private-import/

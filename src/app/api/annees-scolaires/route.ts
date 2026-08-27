@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq, like, sql, desc, and } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { academicYear, academicPeriod } from '@/lib/db/schema';
+import { academicYear } from '@/lib/db/schema';
 import { requireAuthorizedSession } from '@/lib/server-guards';
 import { createAcademicYearSchema } from '@/lib/validations/scolarite';
 import { parsePagination, computePagination } from '@/lib/data-access/pagination';
@@ -11,7 +11,7 @@ import type { AcademicYear } from '@/lib/db/schema';
 
 type AcademicYearListResult = PaginatedResult<AcademicYear>;
 
-// GET /api/annees-scolaires — List academic years with pagination & search
+// GET /api/annees-scolaires
 export async function GET(request: NextRequest) {
   try {
     await requireAuthorizedSession('school:academic_years:read');
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/annees-scolaires — Create an academic year (with optional periods)
+// POST /api/annees-scolaires — Create an academic year (independent, zero periods valid)
 export async function POST(request: NextRequest) {
   try {
     await requireAuthorizedSession('school:academic_years:manage');
@@ -64,34 +64,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, startDate, endDate, status, periods } = parsed.data;
+    const { name, startDate, endDate, status } = parsed.data;
 
-    const created = await db.transaction(async (tx) => {
-      const [year] = await tx
-        .insert(academicYear)
-        .values({
-          schoolId,
-          name,
-          startDate,
-          endDate,
-          status,
-        })
-        .returning();
-
-      if (periods && periods.length > 0) {
-        await tx.insert(academicPeriod).values(
-          periods.map((p) => ({
-            academicYearId: year.id,
-            name: p.name,
-            startDate: p.startDate,
-            endDate: p.endDate,
-            sortOrder: p.sortOrder,
-          })),
-        );
-      }
-
-      return year;
-    });
+    const [created] = await db
+      .insert(academicYear)
+      .values({
+        schoolId,
+        name,
+        startDate,
+        endDate,
+        status,
+      })
+      .returning();
 
     return NextResponse.json(created, { status: 201 });
   } catch (error) {
