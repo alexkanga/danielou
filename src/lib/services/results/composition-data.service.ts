@@ -20,7 +20,6 @@ import {
   student,
   classroom,
 } from '@/lib/db/schema';
-import type { GradeStatus } from './types';
 import type {
   CompositionAssessmentInput,
   CompositionStudentResult,
@@ -345,7 +344,7 @@ export async function getCompositionStudentResult(
   enrollmentId: string,
 ): Promise<CompositionStudentResult> {
   // Validate period type
-  const { period, compositionType } =
+  const { period } =
     await loadAndValidatePeriod(academicPeriodId);
 
   // Validate classroom year consistency
@@ -404,7 +403,7 @@ export async function getCompositionClassResults(
     await loadAndValidatePeriod(academicPeriodId);
 
   // 2. Validate classroom
-  const cls = await loadAndValidateClassroom(
+  await loadAndValidateClassroom(
     classroomId,
     period.academicYearId,
   );
