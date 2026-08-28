@@ -158,6 +158,7 @@ export default function CompositionsPage() {
 
   useEffect(() => {
     if (!selectedPeriodId) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadAssessments();
     void loadResults();
   }, [selectedPeriodId, loadAssessments, loadResults]);
