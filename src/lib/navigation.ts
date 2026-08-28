@@ -121,6 +121,12 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: 'BarChart3',
         requiredPermissions: ['school:grades:read'],
       },
+      {
+        label: 'Compositions',
+        href: '/dashboard/compositions',
+        icon: 'Award',
+        requiredPermissions: ['school:grades:read'],
+      },
     ],
   },
   {
@@ -308,6 +314,13 @@ export const BREADCRUMB_MAP: Array<{
     items: [
       { href: '/dashboard', label: 'Accueil', requiredPermissions: [] },
       { href: '/dashboard/resultats', label: 'Résultats', requiredPermissions: ['school:grades:read'] },
+    ],
+  },
+  {
+    prefix: '/dashboard/compositions',
+    items: [
+      { href: '/dashboard', label: 'Accueil', requiredPermissions: [] },
+      { href: '/dashboard/compositions', label: 'Compositions', requiredPermissions: ['school:grades:read'] },
     ],
   },
   {
