@@ -51,8 +51,8 @@ NO dependency on:
 | Module | Title | Status |
 |--------|-------|--------|
 | WS-002-M1 | Composition Calculation Core | CLOSED |
-| WS-002-M2 | Composition Data Service | READY / NEXT |
-| WS-002-M3 | Composition Workspace | PLANNED |
+| WS-002-M2 | Composition Data Service | CLOSED |
+| WS-002-M3 | Composition Workspace | READY / NEXT |
 | WS-002-M4 | Annual Results & Decision | PLANNED |
 
 **OUT OF SCOPE**
