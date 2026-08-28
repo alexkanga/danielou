@@ -10,25 +10,24 @@
 
 **METHODOLOGY STATUS**: AI SOFTWARE ENGINEERING OS PILOT ACTIVE
 
-**BASELINE QUALITY**
-- typecheck PASS
-- lint PASS
-- tests PASS
-- build PASS
-- SQLite check PASS
-
-**LAST CLOSED OS STEP**: D-OS-1B
-
-**CURRENT OS STEP**: NONE
+**LAST CLOSED GOVERNANCE STEP**: WS-002 CONTRACT DESIGN / OWNER FREEZE
 
 **CURRENT FUNCTIONAL WORK**: NONE
 
-**NEXT FUNCTIONAL WORK**: WS-002 — Composition & Annual Results
+**NEXT FUNCTIONAL MODULE**: WS-002-M1 — Composition Calculation Core
 
-**NEXT AUTHORIZED ACTION**: OWNER approval of WS-002 Workstream/Module Contract before implementation
+**WS-002 CONTRACT**: APPROVED
+
+**WS-002 CONTRACT FILE**: docs/planning/WS-002_COMPOSITION_ANNUAL_RESULTS_CONTRACT.md
+
+**OWNER QUESTIONS BLOCKING M1**: NONE
+
+**DATABASE CHANGE FOR M1**: NONE
 
 **MIGRATION HEAD**: 0012_r_periods_01.sql
 
 **BLOCKERS**: NONE
+
+**DEFERRED M4 BINDING**: Promotion threshold/configuration must be frozen before M4 implementation.
 
 **DEFERRED**: See WS-003 in ROADMAP.md

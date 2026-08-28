@@ -23,7 +23,9 @@ by another AI agent or human developer.
 
 ## WS-002 — COMPOSITION & ANNUAL RESULTS
 
-**STATUS**: PLANNED
+**STATUS**: ACTIVE — CONTRACT APPROVED
+
+**CONTRACT**: docs/planning/WS-002_COMPOSITION_ANNUAL_RESULTS_CONTRACT.md
 
 **POSITION**: NEXT FUNCTIONAL WORKSTREAM
 
@@ -44,20 +46,14 @@ NO dependency on:
 - lint cleanup
 - historical Composition recovery
 
-**IN SCOPE**
+**MODULES**
 
-TO BE FROZEN BY OWNER BEFORE IMPLEMENTATION.
-
-The future contract will define:
-
-- Composition semantics;
-- Passage semantics;
-- annual aggregation rules;
-- promotion/decision rules;
-- required workflows;
-- acceptance criteria;
-- required tests;
-- Definition of Done.
+| Module | Title | Status |
+|--------|-------|--------|
+| WS-002-M1 | Composition Calculation Core | READY / NEXT |
+| WS-002-M2 | Composition Data Service | PLANNED |
+| WS-002-M3 | Composition Workspace | PLANNED |
+| WS-002-M4 | Annual Results & Decision | PLANNED |
 
 **OUT OF SCOPE**
 
@@ -68,8 +64,7 @@ The future contract will define:
 
 **DEFINITION OF DONE**
 
-To be frozen in the future OWNER-approved WS-002 Module/Workstream
-Contract before coding.
+Defined in the approved WS-002 contract.
 
 ---
 
