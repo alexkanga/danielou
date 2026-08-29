@@ -10,12 +10,13 @@ export async function GET(request: NextRequest) {
     await requireAuthorizedSession('school:assessments:read');
     const schoolId = await getSchoolId();
     const { page, limit, search } = parsePagination(request.nextUrl.searchParams);
+    const academicYearId = request.nextUrl.searchParams.get('academicYearId') || undefined;
     const classroomId = request.nextUrl.searchParams.get('classroomId') || undefined;
     const subjectId = request.nextUrl.searchParams.get('subjectId') || undefined;
     const academicPeriodId = request.nextUrl.searchParams.get('academicPeriodId') || undefined;
     const status = request.nextUrl.searchParams.get('status') || undefined;
 
-    const result = await listAssessments({ schoolId, page, limit, search, classroomId, subjectId, academicPeriodId, status });
+    const result = await listAssessments({ schoolId, page, limit, search, academicYearId, classroomId, subjectId, academicPeriodId, status });
     return Response.json(result);
   } catch (error) {
     return pedagogyErrorToResponse(error);

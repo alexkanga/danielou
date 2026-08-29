@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { PageHeader, DataTable, StatusBadge, AcademicContextSelector } from '@/components/shared';
@@ -55,7 +55,6 @@ export default function EvaluationsPage() {
   // Academic context
   const [ctxValue, setCtxValue] = useState<AcademicContextValue>({ academicYearId: '', classroomId: '', academicPeriodId: '' });
   const [ctxMeta, setCtxMeta] = useState<AcademicContextMeta | null>(null);
-  const contextSettledRef = useRef(false);
 
   // Create dialog
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -77,6 +76,7 @@ export default function EvaluationsPage() {
       const p = new URLSearchParams({ page: String(page), limit: '20' });
       if (search) p.set('search', search);
       if (tab) p.set('status', tab);
+      if (ctxValue.academicYearId) p.set('academicYearId', ctxValue.academicYearId);
       if (ctxValue.classroomId) p.set('classroomId', ctxValue.classroomId);
       if (ctxValue.academicPeriodId) p.set('academicPeriodId', ctxValue.academicPeriodId);
       const r = await fetch(`/api/evaluations?${p}`);
@@ -84,24 +84,25 @@ export default function EvaluationsPage() {
       const j = await r.json();
       setData(j.data); setPg(j.pagination);
     } catch { toast.error('Erreur de chargement.'); } finally { setBusy(false); }
-  }, [search, tab, ctxValue.classroomId, ctxValue.academicPeriodId]);
+  }, [search, tab, ctxValue.academicYearId, ctxValue.classroomId, ctxValue.academicPeriodId]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void doFetch(); }, [doFetch]);
 
   // ── Context change handler ───────────────────
+  // Use onChange (fires on every selector change) instead of onContextChange
+  // (which requires all visible selectors to have values before firing).
+  // This enables progressive filtering: year-only, year+class, year+class+period.
   const handleContextChange = useCallback((value: AcademicContextValue, meta: AcademicContextMeta) => {
     setCtxValue(value);
     setCtxMeta(meta);
-    contextSettledRef.current = true;
   }, []);
 
   // Refetch when context or tab changes
   useEffect(() => {
-    if (contextSettledRef.current) {
-      void doFetch(1);
-    }
-  }, [ctxValue.classroomId, ctxValue.academicPeriodId, tab, doFetch]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void doFetch(1);
+  }, [ctxValue.academicYearId, ctxValue.classroomId, ctxValue.academicPeriodId, tab, doFetch]);
 
   // ── Load reference data for create dialog ───
   const loadRefs = async () => {
@@ -157,7 +158,7 @@ export default function EvaluationsPage() {
   const contextClassroom: ClassroomOption | undefined = ctxMeta?.classrooms.find(c => c.id === ctxValue.classroomId);
   const contextPeriod: PeriodOption | undefined = ctxMeta?.periods.find(p => p.id === ctxValue.academicPeriodId);
 
-  const isFiltered = !!(ctxValue.classroomId || ctxValue.academicPeriodId);
+  const isFiltered = !!(ctxValue.academicYearId || ctxValue.classroomId || ctxValue.academicPeriodId);
 
   return (
     <div className="space-y-6">
@@ -166,7 +167,7 @@ export default function EvaluationsPage() {
 
       {/* Academic Context Selector */}
       <AcademicContextSelector
-        onContextChange={handleContextChange}
+        onChange={handleContextChange}
         columns={3}
       />
 
@@ -180,6 +181,8 @@ export default function EvaluationsPage() {
         </div>
         {isFiltered && (
           <p className="text-xs text-muted-foreground">
+            {ctxMeta?.academicYearName && <span>{ctxMeta.academicYearName}</span>}
+            {ctxMeta?.academicYearName && contextClassroom && <span> · </span>}
             {contextClassroom && <span>{contextClassroom.name} ({contextClassroom.levelName})</span>}
             {contextClassroom && contextPeriod && <span> · </span>}
             {contextPeriod && <span>{contextPeriod.name}</span>}
@@ -230,8 +233,10 @@ export default function EvaluationsPage() {
             {/* Show selected context */}
             <div className="rounded-md bg-muted/50 p-3 text-sm space-y-1">
               <p className="font-medium">Contexte académique</p>
+              {ctxMeta?.academicYearName && <p>Année scolaire : {ctxMeta.academicYearName}</p>}
               {contextClassroom && <p>Classe : {contextClassroom.name} ({contextClassroom.levelName})</p>}
-              {!contextClassroom && <p className="text-muted-foreground">Sélectionnez une classe dans le contexte ci-dessus.</p>}
+              {contextPeriod && <p>Période : {contextPeriod.name}</p>}
+              {!ctxMeta?.academicYearName && !contextClassroom && <p className="text-muted-foreground">Sélectionnez une année et une classe dans le contexte ci-dessus.</p>}
             </div>
 
             <div className="space-y-2"><Label>Titre *</Label><Input value={fTitle} onChange={e => setFTitle(e.target.value)} placeholder="Ex: Contrôle chapitre 3" /></div>

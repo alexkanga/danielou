@@ -35,7 +35,7 @@ export class GradeEligibilityError extends Error {
 
 export interface AssessmentListParams {
   schoolId: string; page: number; limit: number; search?: string;
-  classroomId?: string; subjectId?: string; academicPeriodId?: string; status?: string;
+  academicYearId?: string; classroomId?: string; subjectId?: string; academicPeriodId?: string; status?: string;
 }
 
 export interface AssessmentWithDetails extends AssessmentRow {
@@ -50,7 +50,7 @@ export interface AssessmentWithDetails extends AssessmentRow {
 // ─────────────────────────────────────
 
 export async function listAssessments(params: AssessmentListParams): Promise<PaginatedResult<AssessmentWithDetails>> {
-  const { schoolId, page, limit, search, classroomId, subjectId, academicPeriodId, status } = params;
+  const { schoolId, page, limit, search, academicYearId, classroomId, subjectId, academicPeriodId, status } = params;
   const conditions = [];
   if (search) conditions.push(like(assessment.title, `%${search}%`));
   if (classroomId) conditions.push(eq(assessment.classroomId, classroomId));
@@ -60,9 +60,12 @@ export async function listAssessments(params: AssessmentListParams): Promise<Pag
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
+  // Build school-scoped classroom query; optionally narrow by academicYearId
+  const classroomConditions = [eq(level.schoolId, schoolId)];
+  if (academicYearId) classroomConditions.push(eq(classroom.academicYearId, academicYearId));
   const schoolClassrooms = await db.select({ id: classroom.id }).from(classroom)
-    .innerJoin(level, eq(classroom.levelId, level.id)).where(eq(level.schoolId, schoolId));
-  const classroomIds = schoolClassrooms.map(c => c.id);
+    .innerJoin(level, eq(classroom.levelId, level.id)).where(and(...classroomConditions));
+  const classroomIds = schoolClassrooms.map((c: { id: string }) => c.id);
   if (classroomIds.length === 0) return { data: [], pagination: { page, limit, totalItems: 0, totalPages: 0 } };
 
   const schoolClause = inArray(assessment.classroomId, classroomIds);
