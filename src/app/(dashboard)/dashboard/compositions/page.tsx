@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Award, RefreshCw, ExternalLink } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Award, RefreshCw, ExternalLink, Search } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
 
 interface AcademicYearOption { id: string; name: string; status: string }
@@ -41,6 +42,12 @@ const STATUS_COLORS: Record<string, string> = {
   NO_COMPUTABLE_RESULT: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
 };
 
+/* ---- UX-2 / UX-3: Standalone rank lookup (no closure over classResult) ---- */
+function lookupRank(ranking: RankingEntry[], sid: string): number | null {
+  const e = ranking.find((r) => r.studentId === sid);
+  return e ? e.rank : null;
+}
+
 export default function CompositionsPage() {
   const [academicYears, setAcademicYears] = useState<AcademicYearOption[]>([]);
   const [selectedYearId, setSelectedYearId] = useState('');
@@ -52,6 +59,10 @@ export default function CompositionsPage() {
   const [classResult, setClassResult] = useState<ClassResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingSelectors, setLoadingSelectors] = useState(true);
+
+  // UX-2 / UX-3: Filter state
+  const [nameSearch, setNameSearch] = useState('');
+  const [rankFilter, setRankFilter] = useState<string>('all');
 
   useEffect(() => {
     (async () => {
@@ -154,6 +165,8 @@ export default function CompositionsPage() {
     setSelectedPeriodId(id);
     setClassResult(null);
     setAssessments([]);
+    setNameSearch('');
+    setRankFilter('all');
   }, []);
 
   useEffect(() => {
@@ -165,11 +178,57 @@ export default function CompositionsPage() {
 
   const getRank = (sid: string): number | null => {
     if (!classResult) return null;
-    const e = classResult.ranking.find((r) => r.studentId === sid);
-    return e ? e.rank : null;
+    return lookupRank(classResult.ranking, sid);
   };
 
   const canLoad = !!(selectedYearId && selectedClassroomId && selectedPeriodId);
+
+  /* ---- UX-2 / UX-3: Dynamic rank options from authoritative data ---- */
+  const rankOptions = useMemo(() => {
+    if (!classResult) return [];
+    const seen = new Set<number>();
+    const ranks: number[] = [];
+    for (const r of classResult.ranking) {
+      if (!seen.has(r.rank)) {
+        seen.add(r.rank);
+        ranks.push(r.rank);
+      }
+    }
+    ranks.sort((a, b) => a - b);
+    return ranks;
+  }, [classResult]);
+
+  const hasUnranked = useMemo(() => {
+    if (!classResult) return false;
+    return classResult.students.some(s => lookupRank(classResult.ranking, s.studentId) === null);
+  }, [classResult]);
+
+  /* ---- UX-2 / UX-3: Client-side display filtering ---- */
+  const filteredStudents = useMemo(() => {
+    if (!classResult) return [];
+    let result = classResult.students;
+
+    // Name search: case-insensitive match on lastName and firstName
+    const term = nameSearch.trim().toLowerCase();
+    if (term) {
+      result = result.filter(s =>
+        s.studentLastName.toLowerCase().includes(term) ||
+        s.studentFirstName.toLowerCase().includes(term)
+      );
+    }
+
+    // Rank filter
+    if (rankFilter === 'unranked') {
+      result = result.filter(s => lookupRank(classResult.ranking, s.studentId) === null);
+    } else if (rankFilter !== 'all') {
+      const targetRank = parseInt(rankFilter, 10);
+      result = result.filter(s => lookupRank(classResult.ranking, s.studentId) === targetRank);
+    }
+
+    return result;
+  }, [classResult, nameSearch, rankFilter]);
+
+  const isFiltering = nameSearch.trim().length > 0 || rankFilter !== 'all';
 
   return (
     <div className="space-y-6">
@@ -265,7 +324,7 @@ export default function CompositionsPage() {
             )}
           </div>
 
-          {/* Class average */}
+          {/* Class average — never modified by filtering */}
           {classResult.classAverage.status === 'CALCULATED' ? (
             <div className="flex items-center justify-between rounded-lg border bg-muted/50 p-4">
               <span className="text-sm font-medium">Moyenne de classe</span>
@@ -280,7 +339,32 @@ export default function CompositionsPage() {
             </div>
           )}
 
-          {/* Student results table */}
+          {/* UX-2 / UX-3: Search and rank filter controls */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_180px]">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Rechercher un élève..."
+                value={nameSearch}
+                onChange={e => setNameSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <select
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              value={rankFilter}
+              onChange={e => setRankFilter(e.target.value)}
+            >
+              <option value="all">Tous</option>
+              {rankOptions.map(r => (
+                <option key={r} value={String(r)}>Rang {r}</option>
+              ))}
+              {hasUnranked && <option value="unranked">Sans rang</option>}
+            </select>
+          </div>
+
+          {/* Student results table — uses filteredStudents for display only */}
           <div className="rounded-lg border">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -294,10 +378,13 @@ export default function CompositionsPage() {
                   </tr>
                 </thead>
                 <tbody>
+                  {filteredStudents.length === 0 && classResult.students.length > 0 && (
+                    <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Aucun élève ne correspond aux filtres.</td></tr>
+                  )}
                   {classResult.students.length === 0 && (
                     <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Aucun élève inscrit.</td></tr>
                   )}
-                  {classResult.students.map((s) => {
+                  {filteredStudents.map((s) => {
                     const rank = getRank(s.studentId);
                     const st = s.result.status;
                     const isCalc = st === 'CALCULATED';
@@ -333,7 +420,9 @@ export default function CompositionsPage() {
           </div>
 
           <p className="text-xs text-muted-foreground text-right">
-            {classResult.students.length} élève{classResult.students.length > 1 ? 's' : ''}
+            {isFiltering
+              ? <>{filteredStudents.length} affiché{filteredStudents.length > 1 ? 's' : ''} sur {classResult.students.length} élève{classResult.students.length > 1 ? 's' : ''}</>
+              : <>{classResult.students.length} élève{classResult.students.length > 1 ? 's' : ''}</>}
             {classResult.classAverage.studentCount > 0 && <span> - {classResult.classAverage.studentCount} calculé{classResult.classAverage.studentCount > 1 ? 's' : ''}</span>}
           </p>
         </div>

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Save } from 'lucide-react';
+import { Save, ClipboardList } from 'lucide-react';
+import Link from 'next/link';
 
 /* ------------------------------------------------------------------
    Types
@@ -27,7 +28,7 @@ type GradeInput = {
 };
 
 const STATUS_OPTIONS = [
-  { value: 'pending', label: 'Attente', short: '—', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
+  { value: 'pending', label: 'Attente', short: '\u2014', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
   { value: 'graded', label: 'Noté', short: null, color: '' },
   { value: 'absent_excused', label: 'Absent justifié', short: 'AJ', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' },
   { value: 'absent_unexcused', label: 'Absent injustifié', short: 'AIJ', color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' },
@@ -36,6 +37,19 @@ const STATUS_OPTIONS = [
 ];
 
 const NON_NUMERIC = new Set(['absent_excused', 'absent_unexcused', 'exempt', 'not_evaluated']);
+
+/* ------------------------------------------------------------------
+   Dirty detection helper
+   ------------------------------------------------------------------ */
+
+function gradeInputKey(g: GradeInput): string {
+  return `${g.enrollmentId}:${g.rawValue}:${g.status}:${g.comment ?? ''}`;
+}
+
+function gradesFingerprint(gs: Record<string, GradeInput>): string {
+  const keys = Object.keys(gs).sort();
+  return keys.map(k => gradeInputKey(gs[k])).join('|');
+}
 
 /* ------------------------------------------------------------------
    Page
@@ -48,9 +62,15 @@ export default function SaisieNotesPage() {
   const [assessment, setAssessment] = useState<AssessmentInfo | null>(null);
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [grades, setGrades] = useState<Record<string, GradeInput>>({});
+  const [baselineGrades, setBaselineGrades] = useState<Record<string, GradeInput>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [openAssessments, setOpenAssessments] = useState<{ id: string; title: string; subjectName: string | null; classroomName: string | null }[]>([]);
+
+  /* ---- dirty detection ---- */
+  const isDirty = useMemo(() => {
+    return gradesFingerprint(grades) !== gradesFingerprint(baselineGrades);
+  }, [grades, baselineGrades]);
 
   /* ---- fetch assessment students ---- */
   const loadStudents = useCallback(async () => {
@@ -73,6 +93,7 @@ export default function SaisieNotesPage() {
         };
       }
       setGrades(g);
+      setBaselineGrades(g);
     } catch { toast.error('Erreur de chargement.'); } finally { setLoading(false); }
   }, [assessmentId]);
 
@@ -111,6 +132,11 @@ export default function SaisieNotesPage() {
     }
   };
 
+  /* ---- cancel modifications (UX-1) ---- */
+  const handleCancel = () => {
+    setGrades({ ...baselineGrades });
+  };
+
   /* ---- save ---- */
   const handleSave = async () => {
     if (!assessmentId) return;
@@ -124,6 +150,7 @@ export default function SaisieNotesPage() {
       if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || 'Erreur'); }
       const j = await r.json();
       toast.success(`Notes enregistrées. ${j.errors?.length ? j.errors.length + ' erreur(s).' : ''}`);
+      // loadStudents will set both grades and baselineGrades to the new saved state
       void loadStudents();
     } catch (e) { toast.error(e instanceof Error ? e.message : 'Erreur'); } finally { setSaving(false); }
   };
@@ -147,7 +174,15 @@ export default function SaisieNotesPage() {
             ))}
           </div>
         ) : (
-          <p className="text-muted-foreground">Aucune évaluation ouverte. Créez et ouvrez une évaluation d’abord.</p>
+          /* UX-4: Improved empty state */
+          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center">
+            <ClipboardList className="mb-4 h-12 w-12 text-muted-foreground" />
+            <p className="text-lg font-medium text-muted-foreground">Aucune évaluation ouverte.</p>
+            <p className="mt-2 text-sm text-muted-foreground">Pour saisir ou modifier des notes, ouvrez d&apos;abord une évaluation.</p>
+            <Button variant="outline" className="mt-4" asChild>
+              <Link href="/dashboard/evaluations">Voir les évaluations</Link>
+            </Button>
+          </div>
         )}
       </div>
     );
@@ -165,16 +200,21 @@ export default function SaisieNotesPage() {
   return (
     <div className="space-y-4">
       {/* header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">{assessment?.title ?? 'Évaluation'}</h1>
           <p className="text-sm text-muted-foreground">
             {assessment?.subjectName ?? ''} — {assessment?.classroomName ?? ''} — Barème /{scale} — Coeff. {assessment?.coefficient ?? '1'}
           </p>
         </div>
-        <Button onClick={handleSave} disabled={saving}>
-          <Save className="mr-2 h-4 w-4" /> {saving ? 'Enregistrement...' : 'Enregistrer'}
-        </Button>
+        <div className="flex gap-2 shrink-0">
+          <Button variant="outline" onClick={handleCancel} disabled={!isDirty || saving}>
+            Annuler les modifications
+          </Button>
+          <Button onClick={handleSave} disabled={saving}>
+            <Save className="mr-2 h-4 w-4" /> {saving ? 'Enregistrement...' : 'Enregistrer'}
+          </Button>
+        </div>
       </div>
 
       {/* grade table */}
@@ -242,7 +282,10 @@ export default function SaisieNotesPage() {
         )}
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={handleCancel} disabled={!isDirty || saving} size="lg">
+          Annuler les modifications
+        </Button>
         <Button onClick={handleSave} disabled={saving} size="lg">
           <Save className="mr-2 h-4 w-4" /> {saving ? 'Enregistrement...' : 'Enregistrer toutes les notes'}
         </Button>
