@@ -30,7 +30,7 @@ interface ClassResult {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  CALCULATED: 'Calcul\u00e9',
+  CALCULATED: 'Calculé',
   INCOMPLETE: 'Incomplet',
   NO_COMPUTABLE_RESULT: 'Aucune moyenne calculable',
 };
@@ -139,13 +139,13 @@ export default function CompositionsPage() {
       const r = await fetch(`/api/compositions?academicPeriodId=${selectedPeriodId}&classroomId=${selectedClassroomId}`);
       if (!r.ok) {
         const err = await r.json().catch(() => null);
-        toast.error(err?.error || 'Erreur de chargement des r\u00e9sultats.');
+        toast.error(err?.error || 'Erreur de chargement des résultats.');
         setClassResult(null);
         return;
       }
       setClassResult(await r.json());
     } catch {
-      toast.error('Erreur de chargement des r\u00e9sultats.');
+      toast.error('Erreur de chargement des résultats.');
       setClassResult(null);
     } finally { setLoading(false); }
   }, [selectedPeriodId, selectedClassroomId]);
@@ -173,12 +173,12 @@ export default function CompositionsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Compositions" description="R\u00e9sultats des compositions et passages par classe." />
+      <PageHeader title="Compositions" description="Résultats des compositions et passages par classe." />
 
       {/* Context selectors */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 rounded-lg border bg-card p-4">
         <div className="space-y-1.5">
-          <label className="text-sm font-medium">Ann\u00e9e scolaire</label>
+          <label className="text-sm font-medium">Année scolaire</label>
           {loadingSelectors
             ? <Skeleton className="h-9 w-full" />
             : (
@@ -196,7 +196,7 @@ export default function CompositionsPage() {
           </select>
         </div>
         <div className="space-y-1.5">
-          <label className="text-sm font-medium">P\u00e9riode</label>
+          <label className="text-sm font-medium">Période</label>
           <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" value={selectedPeriodId} onChange={(e) => handlePeriodChange(e.target.value)} disabled={!selectedClassroomId}>
             <option value="">- Choisir -</option>
             {periods.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.periodType === 'passage' ? 'Passage' : 'Composition'})</option>)}
@@ -208,7 +208,7 @@ export default function CompositionsPage() {
       {!canLoad && !loading && (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center">
           <Award className="mb-4 h-12 w-12 text-muted-foreground" />
-          <p className="text-lg font-medium text-muted-foreground">S\u00e9lectionnez une ann\u00e9e, une classe et une p\u00e9riode de composition.</p>
+          <p className="text-lg font-medium text-muted-foreground">Sélectionnez une année, une classe et une période de composition.</p>
         </div>
       )}
 
@@ -229,14 +229,14 @@ export default function CompositionsPage() {
                 <h3 className="text-lg font-semibold">{classResult.periodName}</h3>
                 <p className="text-sm text-muted-foreground">
                   {classResult.periodType === 'passage' ? 'Passage' : 'Composition'}
-                  {assessments.length > 0 && <span> - {assessments.length} \u00e9valuation{assessments.length > 1 ? 's' : ''}</span>}
+                  {assessments.length > 0 && <span> - {assessments.length} évaluation{assessments.length > 1 ? 's' : ''}</span>}
                 </p>
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" asChild>
                   <a href={`/dashboard/evaluations?classroomId=${selectedClassroomId}&academicPeriodId=${selectedPeriodId}`} target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="mr-1 h-3.5 w-3.5" />
-                    G\u00e9rer les \u00e9valuations
+                    Gérer les évaluations
                   </a>
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => { void loadResults(); }}>
@@ -257,9 +257,9 @@ export default function CompositionsPage() {
             )}
             {assessments.length === 0 && (
               <p className="text-sm text-muted-foreground">
-                Aucune \u00e9valuation pour cette p\u00e9riode.{' '}
+                Aucune évaluation pour cette période.{' '}
                 <a href={`/dashboard/evaluations?classroomId=${selectedClassroomId}&academicPeriodId=${selectedPeriodId}`} className="underline" target="_blank" rel="noopener noreferrer">
-                  Cr\u00e9er une \u00e9valuation
+                  Créer une évaluation
                 </a>
               </p>
             )}
@@ -287,7 +287,7 @@ export default function CompositionsPage() {
                 <thead>
                   <tr className="border-b bg-muted/50">
                     <th className="px-4 py-3 text-left font-medium">Rang</th>
-                    <th className="px-4 py-3 text-left font-medium">\u00c9l\u00e8ve</th>
+                    <th className="px-4 py-3 text-left font-medium">Élève</th>
                     <th className="px-4 py-3 text-center font-medium">Statut</th>
                     <th className="px-4 py-3 text-center font-medium">Moyenne</th>
                     <th className="px-4 py-3 text-center font-medium">Notes</th>
@@ -295,7 +295,7 @@ export default function CompositionsPage() {
                 </thead>
                 <tbody>
                   {classResult.students.length === 0 && (
-                    <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Aucun \u00e9l\u00e8ve inscrit.</td></tr>
+                    <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Aucun élève inscrit.</td></tr>
                   )}
                   {classResult.students.map((s) => {
                     const rank = getRank(s.studentId);
@@ -333,8 +333,8 @@ export default function CompositionsPage() {
           </div>
 
           <p className="text-xs text-muted-foreground text-right">
-            {classResult.students.length} \u00e9l\u00e8ve{classResult.students.length > 1 ? 's' : ''}
-            {classResult.classAverage.studentCount > 0 && <span> - {classResult.classAverage.studentCount} calcul\u00e9{classResult.classAverage.studentCount > 1 ? 's' : ''}</span>}
+            {classResult.students.length} élève{classResult.students.length > 1 ? 's' : ''}
+            {classResult.classAverage.studentCount > 0 && <span> - {classResult.classAverage.studentCount} calculé{classResult.classAverage.studentCount > 1 ? 's' : ''}</span>}
           </p>
         </div>
       )}
@@ -342,7 +342,7 @@ export default function CompositionsPage() {
       {/* No periods */}
       {!loading && selectedClassroomId && periods.length === 0 && (
         <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-          <p>Aucune p\u00e9riode de composition ou passage trouv\u00e9e.</p>
+          <p>Aucune période de composition ou passage trouvée.</p>
         </div>
       )}
     </div>
