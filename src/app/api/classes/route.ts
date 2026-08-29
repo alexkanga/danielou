@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
     const schoolId = await getSchoolId();
 
     const { page, limit, search } = parsePagination(request.nextUrl.searchParams);
+    const academicYearId = request.nextUrl.searchParams.get('academicYearId') || undefined;
 
     const searchCondition = search
       ? or(
@@ -32,8 +33,11 @@ export async function GET(request: NextRequest) {
         )
       : undefined;
 
+    const yearFilter = academicYearId ? eq(classroom.academicYearId, academicYearId) : undefined;
+
     const whereClause = and(
       eq(level.schoolId, schoolId),
+      yearFilter,
       searchCondition,
     );
 
