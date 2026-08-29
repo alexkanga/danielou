@@ -4,7 +4,7 @@
  * CRUD + lifecycle (draft → open → closed/cancelled) for assessments.
  */
 
-import { eq, and, sql, desc, asc, like } from 'drizzle-orm';
+import { eq, and, sql, desc, asc, like, inArray } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import {
   assessment, grade, classroom, academicPeriod,
@@ -64,7 +64,7 @@ export async function listAssessments(params: AssessmentListParams): Promise<Pag
   const classroomIds = schoolClassrooms.map(c => c.id);
   if (classroomIds.length === 0) return { data: [], pagination: { page, limit, totalItems: 0, totalPages: 0 } };
 
-  const schoolClause = sql`${assessment.classroomId} = ANY(${classroomIds})`;
+  const schoolClause = inArray(assessment.classroomId, classroomIds);
   const finalWhere = whereClause ? and(whereClause, schoolClause) : schoolClause;
 
   const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(assessment).where(finalWhere);
