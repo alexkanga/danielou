@@ -159,19 +159,23 @@ export default function EvaluationsPage() {
         data={data} pagination={pg} onPageChange={p => doFetch(p)}
         onSearch={s => setSearch(s)} searchable searchPlaceholder="Rechercher une évaluation..."
         getId={(i: AssessmentRow) => i.id}
-        actions={(_item: AssessmentRow) => (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {_item.status === 'draft' && <DropdownMenuItem onClick={() => doAction(_item.id, 'open')}><Play className="mr-2 h-4 w-4" /> Ouvrir</DropdownMenuItem>}
-              {_item.status === 'open' && <DropdownMenuItem onClick={() => doAction(_item.id, 'close')}><Lock className="mr-2 h-4 w-4" /> Fermer</DropdownMenuItem>}
-              {(_item.status === 'draft' || _item.status === 'open') && <DropdownMenuItem onClick={() => doAction(_item.id, 'cancel')}><XCircle className="mr-2 h-4 w-4" /> Annuler</DropdownMenuItem>}
-              {_item.status === 'open' && (
-                <DropdownMenuItem onClick={() => { router.push('/dashboard/saisie-notes?assessmentId=' + _item.id); }}><PenLine className="mr-2 h-4 w-4" /> Saisir les notes</DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+        actions={(_item: AssessmentRow) => {
+          const hasActions = _item.status === 'draft' || _item.status === 'open';
+          if (!hasActions) return null;
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {_item.status === 'draft' && <DropdownMenuItem onClick={() => doAction(_item.id, 'open')}><Play className="mr-2 h-4 w-4" /> Ouvrir</DropdownMenuItem>}
+                {_item.status === 'open' && <DropdownMenuItem onClick={() => doAction(_item.id, 'close')}><Lock className="mr-2 h-4 w-4" /> Fermer</DropdownMenuItem>}
+                {(_item.status === 'draft' || _item.status === 'open') && <DropdownMenuItem onClick={() => doAction(_item.id, 'cancel')}><XCircle className="mr-2 h-4 w-4" /> Annuler</DropdownMenuItem>}
+                {_item.status === 'open' && (
+                  <DropdownMenuItem onClick={() => { router.push('/dashboard/saisie-notes?assessmentId=' + _item.id); }}><PenLine className="mr-2 h-4 w-4" /> Saisir les notes</DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        }}
         emptyMessage="Aucune évaluation trouvée."
       />
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
