@@ -62,3 +62,4 @@ data/private/
 
 # R-PERIODS-01 — private student data (NEVER commit)
 .private-import/
+agent-ctx/

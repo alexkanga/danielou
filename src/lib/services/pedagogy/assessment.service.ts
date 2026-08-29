@@ -7,7 +7,7 @@
 import { eq, and, sql, desc, asc, like, inArray } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import {
-  assessment, grade, classroom, academicPeriod,
+  assessment, grade, classroom, academicPeriod, academicYear,
   enrollment, classroomAssignment, student, level, subject, assessmentType,
 } from '@/lib/db/schema';
 import type { Assessment as AssessmentRow } from '@/lib/db/schema';
@@ -40,6 +40,7 @@ export interface AssessmentListParams {
 
 export interface AssessmentWithDetails extends AssessmentRow {
   classroomName?: string | null;
+  yearName?: string | null;
   subjectName?: string | null;
   periodName?: string | null;
   typeName?: string | null; gradeCount: number;
@@ -70,18 +71,19 @@ export async function listAssessments(params: AssessmentListParams): Promise<Pag
   const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(assessment).where(finalWhere);
 
   const data = await db.select({
-    assessment, classroomName: classroom.name, subjectName: subject.name,
+    assessment, classroomName: classroom.name, yearName: academicYear.name, subjectName: subject.name,
     periodName: academicPeriod.name, typeName: assessmentType.name,
     gradeCount: sql<number>`(SELECT count(*) FROM grade WHERE grade.assessment_id = assessment.id)::int`,
   }).from(assessment)
     .leftJoin(classroom, eq(assessment.classroomId, classroom.id))
+    .leftJoin(academicYear, eq(classroom.academicYearId, academicYear.id))
     .leftJoin(subject, eq(assessment.subjectId, subject.id))
     .leftJoin(academicPeriod, eq(assessment.academicPeriodId, academicPeriod.id))
     .leftJoin(assessmentType, eq(assessment.assessmentTypeId, assessmentType.id))
     .where(finalWhere).orderBy(desc(assessment.createdAt)).limit(limit).offset((page - 1) * limit);
 
   return {
-    data: data.map(r => ({ ...r.assessment, classroomName: r.classroomName, subjectName: r.subjectName, periodName: r.periodName, typeName: r.typeName, gradeCount: r.gradeCount })),
+    data: data.map(r => ({ ...r.assessment, classroomName: r.classroomName, yearName: r.yearName, subjectName: r.subjectName, periodName: r.periodName, typeName: r.typeName, gradeCount: r.gradeCount })),
     pagination: { page, limit, totalItems: count, totalPages: Math.max(1, Math.ceil(count / limit)) },
   };
 }
