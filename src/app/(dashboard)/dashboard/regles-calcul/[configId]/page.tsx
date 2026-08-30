@@ -98,6 +98,7 @@ export default function ConfigDetailPage() {
   const [cfgConductCoeff, setCfgConductCoeff] = useState('0');
   const [cfgConductScale, setCfgConductScale] = useState('20');
   const [cfgDesc, setCfgDesc] = useState('');
+  const [cfgPromotionThreshold, setCfgPromotionThreshold] = useState('');
 
   // Delete
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -191,6 +192,7 @@ export default function ConfigDetailPage() {
     setCfgConductCoeff(config.conductCoefficient ?? '0');
     setCfgConductScale(String(config.conductScale ?? 20));
     setCfgDesc(config.description ?? '');
+    setCfgPromotionThreshold(config.promotionThreshold != null ? String(config.promotionThreshold) : '');
     setCfgFormOpen(true);
   };
 
@@ -211,6 +213,7 @@ export default function ConfigDetailPage() {
           conductCoefficient: cfgConduct ? (parseFloat(cfgConductCoeff) || null) : null,
           conductScale: cfgConduct ? (parseInt(cfgConductScale, 10) || null) : null,
           description: cfgDesc.trim() || null,
+          promotionThreshold: cfgPromotionThreshold.trim() !== '' ? (parseFloat(cfgPromotionThreshold) || null) : null,
         }),
       });
       if (!res.ok) {
@@ -565,6 +568,7 @@ export default function ConfigDetailPage() {
             <div><span className="text-muted-foreground">Décimales générale :</span> {config.generalDecimalPlaces}</div>
             <div><span className="text-muted-foreground">Classement :</span> {config.rankingEnabled ? 'Oui' : 'Non'}</div>
             <div><span className="text-muted-foreground">Conduite :</span> {config.conductEnabled ? 'Oui' : 'Non'}</div>
+            <div><span className="text-muted-foreground">Seuil de promotion :</span> {config.promotionThreshold != null ? `${config.promotionThreshold} / 10` : 'Non configuré'}</div>
             {config.conductEnabled && (
               <div><span className="text-muted-foreground">Coeff. conduite :</span> {config.conductCoefficient ?? '—'} / {config.conductScale ?? '—'}</div>
             )}
@@ -783,6 +787,22 @@ export default function ConfigDetailPage() {
               Inclure la conduite dans la moyenne
             </label>
           )}
+          <div className="space-y-2">
+            <Label htmlFor="ed-threshold">Seuil de promotion <span className="text-muted-foreground font-normal">/ 10</span> <span className="text-muted-foreground font-normal text-xs">(optionnel)</span></Label>
+            <Input
+              id="ed-threshold"
+              type="number"
+              min="0"
+              max="10"
+              step="0.01"
+              placeholder="Non configuré"
+              value={cfgPromotionThreshold}
+              onChange={(e) => setCfgPromotionThreshold(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Si non configuré, les propositions d&apos;admission/redoublement ne seront pas disponibles.
+            </p>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="ed-desc">Description</Label>
             <Textarea id="ed-desc" value={cfgDesc} onChange={(e) => setCfgDesc(e.target.value)} rows={2} />
