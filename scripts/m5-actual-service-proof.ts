@@ -12,8 +12,7 @@ import pg from 'pg';
 import Decimal from 'decimal.js';
 
 // ── MUST set DATABASE_URL before any import that touches @/lib/db ──
-const NEON_URL = 'postgresql://neondb_owner:npg_kajScfx40nhJ@ep-floral-rice-b1si6p5a-pooler.c-5.eu-central-1.aws.neon.tech/neondb?sslmode=require';
-process.env.DATABASE_URL = NEON_URL;
+if (!process.env.DATABASE_URL) { console.error('DATABASE_URL required'); process.exit(1); }
 
 // Now import actual service code (uses process.env.DATABASE_URL via db proxy)
 import {
@@ -173,7 +172,7 @@ async function main() {
   console.log('M5 ACTUAL SERVICE + POSTGRES FINAL PROOF');
   console.log('============================================================\n');
 
-  client = new Client({ connectionString: NEON_URL });
+  client = new Client({ connectionString: process.env.DATABASE_URL! });
   await client.connect();
   check('SAFE NONPROD POSTGRES', true, 'connected');
 

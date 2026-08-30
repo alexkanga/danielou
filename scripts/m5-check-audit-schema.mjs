@@ -1,8 +1,10 @@
 // Quick check: audit_log actual schema in Neon
 import pg from 'pg';
 const { Client } = pg;
+const DATABASE_URL = process.env.DATABASE_URL;
+if (!DATABASE_URL) { console.error('DATABASE_URL required'); process.exit(1); }
 const client = new Client({
-  connectionString: 'postgresql://neondb_owner:npg_kajScfx40nhJ@ep-floral-rice-b1si6p5a-pooler.c-5.eu-central-1.aws.neon.tech/neondb?sslmode=require',
+  connectionString: DATABASE_URL,
 });
 await client.connect();
 

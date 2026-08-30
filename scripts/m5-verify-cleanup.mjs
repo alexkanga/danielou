@@ -1,5 +1,7 @@
 import pg from 'pg';
-const c=new pg.Client({connectionString:'postgresql://neondb_owner:npg_kajScfx40nhJ@ep-floral-rice-b1si6p5a-pooler.c-5.eu-central-1.aws.neon.tech/neondb?sslmode=require'});
+const DATABASE_URL = process.env.DATABASE_URL;
+if (!DATABASE_URL) { console.error('DATABASE_URL required'); process.exit(1); }
+const c=new pg.Client({connectionString: DATABASE_URL});
 await c.connect();
 const ids = ['b1000001-0000-0000-0000-000000000001','b1000002-0000-0000-0000-000000000002','b1000003-0000-0000-0000-000000000003','b1000004-0000-0000-0000-000000000004','b1000005-0000-0000-0000-000000000005'];
 const aid = ids.map(i=>`'${i}'`).join(',');

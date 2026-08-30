@@ -18,7 +18,8 @@ import Decimal from 'decimal.js';
 Decimal.set({ precision: 20 });
 const { Client } = pg;
 
-const DATABASE_URL = 'postgresql://neondb_owner:npg_kajScfx40nhJ@ep-floral-rice-b1si6p5a-pooler.c-5.eu-central-1.aws.neon.tech/neondb?sslmode=require';
+const DATABASE_URL = process.env.DATABASE_URL;
+if (!DATABASE_URL) { console.error('DATABASE_URL required'); process.exit(1); }
 const TEST_UUID = '00000000-0000-0000-0000-000000000099';
 
 const FIXTURE = {
