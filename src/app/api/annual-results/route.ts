@@ -6,7 +6,7 @@ import { pedagogyErrorToResponse } from '@/lib/services/pedagogy';
 
 export async function GET(request: NextRequest) {
   try {
-    await requireAuthorizedSession('school:grades:read');
+    await requireAuthorizedSession('school:annual_results:read');
     await getSchoolId();
     const academicYearId = request.nextUrl.searchParams.get('academicYearId');
     const classroomId = request.nextUrl.searchParams.get('classroomId');

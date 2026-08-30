@@ -76,6 +76,7 @@ export default function ReglesCalculPage() {
   const [conductCoefficient, setConductCoefficient] = useState('0');
   const [conductScale, setConductScale] = useState('20');
   const [description, setDescription] = useState('');
+  const [promotionThreshold, setPromotionThreshold] = useState('');
 
   const fetchReferences = useCallback(async () => {
     try {
@@ -129,6 +130,7 @@ export default function ReglesCalculPage() {
     setConductIncludedInAverage(false);
     setConductCoefficient('0');
     setConductScale('20');
+    setPromotionThreshold('');
     setDescription('');
     setFormOpen(true);
   };
@@ -155,6 +157,7 @@ export default function ReglesCalculPage() {
           conductIncludedInAverage,
           conductCoefficient: conductEnabled ? (parseFloat(conductCoefficient) || null) : null,
           conductScale: conductEnabled ? (parseInt(conductScale, 10) || null) : null,
+          promotionThreshold: promotionThreshold.trim() !== '' ? (parseFloat(promotionThreshold) || null) : null,
           description: description.trim() || null,
         }),
       });
@@ -406,6 +409,22 @@ export default function ReglesCalculPage() {
               Inclure la conduite dans la moyenne
             </label>
           )}
+          <div className="space-y-2">
+            <Label htmlFor="cfg-threshold">Seuil de promotion <span className="text-muted-foreground font-normal">/ 10</span> <span className="text-muted-foreground font-normal text-xs">(optionnel)</span></Label>
+            <Input
+              id="cfg-threshold"
+              type="number"
+              min="0"
+              max="10"
+              step="0.01"
+              placeholder="Non configuré"
+              value={promotionThreshold}
+              onChange={(e) => setPromotionThreshold(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Si non configuré, les propositions d&apos;admission/redoublement ne seront pas disponibles.
+            </p>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="cfg-desc">Description</Label>
             <Textarea id="cfg-desc" placeholder="Description optionnelle…" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />

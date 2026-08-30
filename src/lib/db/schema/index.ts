@@ -18,6 +18,11 @@ export const calculationPolicyEnum = pgEnum('calculation_policy', ['simple_avera
 export const roundingStrategyEnum = pgEnum('rounding_strategy', ['half_up', 'half_even', 'truncate']);
 export const aggregationPolicyEnum = pgEnum('aggregation_policy', ['simple_average', 'weighted_average', 'single_grade']);
 export const promotionDecisionEnum = pgEnum('promotion_decision', ['proposed_admitted', 'proposed_repeat', 'decision_required', 'final_admitted', 'final_repeat']);
+
+// M4 Annual Result enums
+export const annualCalculationStatusEnum = pgEnum('annual_calculation_status', ['calculated', 'incomplete', 'decision_council']);
+export const annualRecommendationEnum = pgEnum('annual_recommendation', ['proposed_admitted', 'proposed_repeat', 'decision_council', 'incomplete', 'threshold_not_configured']);
+export const annualFinalDecisionEnum = pgEnum('annual_final_decision', ['admitted', 'repeat', 'admitted_by_derogation']);
 export const generalAverageInputPolicyEnum = pgEnum('general_average_input_policy', ['subject_official', 'subject_raw']);
 export const roleEnum = pgEnum('app_role', ['admin', 'direction', 'teacher', 'reader']);
 export const platformRoleEnum = pgEnum('platform_role', ['super_admin', 'none']);
@@ -391,6 +396,8 @@ export const pedagogicalConfig = pgTable('pedagogical_config', {
   conductCoefficient: numeric('conduct_coefficient', { precision: 6, scale: 2 }).default('0'),
   conductScale: integer('conduct_scale').default(20),
   generalAverageInputPolicy: generalAverageInputPolicyEnum('general_average_input_policy').notNull().default('subject_official'),
+  /** M4: Promotion threshold /10. NULL = not configured. */
+  promotionThreshold: numeric('promotion_threshold', { precision: 4, scale: 2 }),
   description: text('description'),
   ...auditColumns,
 }, (table) => [
@@ -401,6 +408,7 @@ export const pedagogicalConfig = pgTable('pedagogical_config', {
   check('pedagogical_config_general_decimals_check', sql`\`general_decimal_places\` >= 0 AND \`general_decimal_places\` <= 6`),
   check('pedagogical_config_conduct_coefficient_check', sql`\`conduct_coefficient\` IS NULL OR \`conduct_coefficient\` >= 0`),
   check('pedagogical_config_conduct_scale_check', sql`\`conduct_scale\` IS NULL OR \`conduct_scale\` >= 1`),
+  check('pedagogical_config_promotion_threshold_check', sql`\`promotion_threshold\` IS NULL OR (\`promotion_threshold\` >= 0 AND \`promotion_threshold\` <= 10)`),
 ]);
 
 // ==============================================
@@ -533,6 +541,47 @@ export const auditLog = pgTable('audit_log', {
 });
 
 // ==============================================
+// ANNUAL RESULT (M4 — annual decision snapshot)
+// ==============================================
+
+export const annualResult = pgTable('annual_result', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  /** 1:1 with enrollment. One annual_result per annual enrollment. */
+  enrollmentId: uuid('enrollment_id').notNull().references(() => enrollment.id, { onDelete: 'restrict' }).unique(),
+  /** Regular compositions raw average (/10). */
+  regularRaw: numeric('regular_raw', { precision: 12, scale: 8 }),
+  /** Passage raw average (/10). */
+  passageRaw: numeric('passage_raw', { precision: 12, scale: 8 }),
+  /** Full-precision annual raw average. */
+  annualRaw: numeric('annual_raw', { precision: 12, scale: 8 }),
+  /** HALF_UP2 annual official average. */
+  annualOfficial: numeric('annual_official', { precision: 8, scale: 4 }),
+  /** Separate calculation status — NOT reused from promotionDecisionEnum. */
+  calculationStatus: annualCalculationStatusEnum('calculation_status').notNull(),
+  /** Annual rank within class. Null when not CALCULATED. */
+  annualRank: integer('annual_rank'),
+  /** Snapshot of the promotion threshold at decision time. */
+  promotionThresholdSnapshot: numeric('promotion_threshold_snapshot', { precision: 4, scale: 2 }),
+  /** System recommendation. Distinct from calculation status and final decision. */
+  systemRecommendation: annualRecommendationEnum('system_recommendation'),
+  /** Final decision by authorized user. Null until recorded. */
+  finalDecision: annualFinalDecisionEnum('final_decision'),
+  /** Mandatory justification for derogation / council decisions. */
+  decisionJustification: text('decision_justification'),
+  /** Actor who recorded the final decision. */
+  decidedBy: uuid('decided_by').references(() => user.id),
+  /** When the final decision was recorded. */
+  decidedAt: timestamp('decided_at', { withTimezone: true }),
+  /** Reference to the pedagogical config version used. */
+  configVersionId: uuid('config_version_id').references(() => pedagogicalConfig.id),
+  ...auditColumns,
+}, (table) => [
+  index('ar_enrollment_idx').on(table.enrollmentId),
+  index('ar_decision_by_idx').on(table.decidedBy),
+  index('ar_config_version_idx').on(table.configVersionId),
+]);
+
+// ==============================================
 // TYPE EXPORTS
 // ==============================================
 
@@ -603,3 +652,5 @@ export type TeacherAssignment = typeof teacherAssignment.$inferSelect;
 export type NewTeacherAssignment = typeof teacherAssignment.$inferInsert;
 export type ReportCardComponentItem = typeof reportCardComponentItem.$inferSelect;
 export type NewReportCardComponentItem = typeof reportCardComponentItem.$inferInsert;
+export type AnnualResult = typeof annualResult.$inferSelect;
+export type NewAnnualResult = typeof annualResult.$inferInsert;

@@ -101,4 +101,10 @@ export interface AnnualStudentRow {
   annual: AnnualStudentResult;
   /** Annual rank. Null if not CALCULATED. */
   annualRank: AnnualRankingEntry | null;
+  /** Persisted final decision (from DB). Null if not yet decided. */
+  persistedFinalDecision?: string | null;
+  /** Persisted decision justification. */
+  persistedJustification?: string | null;
+  /** When the decision was recorded. */
+  decidedAt?: string | null;
 }

@@ -82,6 +82,7 @@ export async function listConfigs(params: {
       conductIncludedInAverage: pedagogicalConfig.conductIncludedInAverage,
       conductCoefficient: pedagogicalConfig.conductCoefficient,
       conductScale: pedagogicalConfig.conductScale,
+      promotionThreshold: pedagogicalConfig.promotionThreshold,
       description: pedagogicalConfig.description,
       createdAt: pedagogicalConfig.createdAt,
       updatedAt: pedagogicalConfig.updatedAt,
@@ -188,6 +189,9 @@ export async function createConfig(
         ? String(input.conductCoefficient)
         : null,
       conductScale: input.conductScale ?? null,
+      promotionThreshold: input.promotionThreshold !== null && input.promotionThreshold !== undefined
+        ? String(input.promotionThreshold)
+        : null,
       description: input.description ?? null,
     })
     .returning();
@@ -240,6 +244,11 @@ export async function updateConfig(
   }
   if (input.conductScale !== undefined) {
     updateData.conductScale = input.conductScale;
+  }
+  if (input.promotionThreshold !== undefined) {
+    updateData.promotionThreshold = input.promotionThreshold !== null
+      ? String(input.promotionThreshold)
+      : null;
   }
   if (input.description !== undefined) updateData.description = input.description;
 
@@ -390,6 +399,7 @@ export async function cloneConfig(
         conductIncludedInAverage: source.conductIncludedInAverage,
         conductCoefficient: source.conductCoefficient,
         conductScale: source.conductScale,
+        promotionThreshold: source.promotionThreshold,
         description: source.description,
       })
       .returning();
