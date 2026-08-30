@@ -5,15 +5,21 @@
  * - Upserting annual result snapshots
  * - Recording final promotion decisions with full validation
  * - Audit trail for all decision mutations
+ *
+ * CRITICAL INVARIANTS:
+ * - ALL validation occurs BEFORE any DB write.
+ * - Decision persistence + audit are atomic (single transaction).
+ * - Validation errors use PedagogyDomainError (422), never plain Error (500).
+ * - annualOfficial and annualRank are NEVER modified by decision logic.
  */
 
 import { eq, and } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { annualResult, pedagogicalConfig, classroom, enrollment, classroomAssignment } from '@/lib/db/schema';
+import { annualResult, pedagogicalConfig, classroom, enrollment, classroomAssignment, auditLog } from '@/lib/db/schema';
 import { getAnnualClassResults } from './annual-data.service';
 import { deriveRecommendation, validateDecision, type FinalDecisionValue } from './recommendation-engine';
-import { logPedagogyAudit, sessionToAuditActor } from '@/lib/services/pedagogy/audit';
-import { NotFoundError } from '@/lib/services/pedagogy/errors';
+import { sessionToAuditActor } from '@/lib/services/pedagogy/audit';
+import { NotFoundError, PedagogyDomainError } from '@/lib/services/pedagogy/errors';
 
 // ─────────────────────────────────────────────
 // Types
@@ -29,7 +35,7 @@ export interface RecordDecisionParams {
 }
 
 export interface DecisionResult {
- id: string;
+  id: string;
   enrollmentId: string;
   calculationStatus: string;
   annualOfficial: string | null;
@@ -43,12 +49,6 @@ export interface DecisionResult {
 // ─────────────────────────────────────────────
 // Map DB enum values to engine values
 // ─────────────────────────────────────────────
-
-const CALC_STATUS_TO_ENGINE: Record<string, string> = {
-  calculated: 'CALCULATED',
-  incomplete: 'INCOMPLETE',
-  decision_council: 'DECISION_COUNCIL',
-};
 
 const ENGINE_TO_DB_RECOMMENDATION: Record<string, string> = {
   PROPOSED_ADMITTED: 'proposed_admitted',
@@ -71,22 +71,21 @@ const REQUESTED_TO_DB_DECISION: Record<string, string> = {
 /**
  * Record a final promotion decision for a student's annual enrollment.
  *
- * 1. Load/recompute authoritative annual result
- * 2. Resolve threshold/config
- * 3. Validate calculation status
- * 4. Validate recommendation
- * 5. Validate requested final decision
- * 6. Require justification when contract requires it
- * 7. Snapshot annual values
- * 8. Persist final decision
- * 9. Record actor + timestamp
- * 10. Write audit event
- * 11. Return typed result
+ * Execution order (validation-authoritative):
+ * 1. Load enrollment + classroom (read-only)
+ * 2. Load existing annual result or compute fresh values (read-only)
+ * 3. VALIDATE: authorization, allowed decision, required justification
+ * 4. TRANSACTION: snapshot creation + decision persist + audit
+ * 5. Return typed result
  */
 export async function recordFinalDecision(params: RecordDecisionParams): Promise<DecisionResult> {
   const { enrollmentId, finalDecision, justification, actor, ipAddress, schoolId } = params;
 
-  // 1. Load enrollment with classroom via classroomAssignment
+  // ─────────────────────────────────────────────
+  // PHASE 1: READ-ONLY — Load all data needed
+  // ─────────────────────────────────────────────
+
+  // 1a. Load enrollment with classroom via classroomAssignment
   const [assignment] = await db.select({
     enrollmentId: classroomAssignment.enrollmentId,
     classroomId: classroomAssignment.classroomId,
@@ -106,13 +105,35 @@ export async function recordFinalDecision(params: RecordDecisionParams): Promise
 
   if (!enr) throw new NotFoundError('enrollment', enrollmentId);
 
-  // 2. Load existing annual result or compute fresh
-  let existingResult = await db.select().from(annualResult)
+  // 1b. Load existing annual result
+  const existingResults = await db.select().from(annualResult)
     .where(eq(annualResult.enrollmentId, enrollmentId))
     .limit(1);
 
-  // If no persisted result, compute from scratch and snapshot
-  if (existingResult.length === 0) {
+  // 1c. Prepare values for potential snapshot creation (no DB write)
+  let snapshotData: {
+    regularRaw: string | null;
+    passageRaw: string | null;
+    annualRaw: string | null;
+    annualOfficial: string | null;
+    calculationStatus: 'calculated' | 'incomplete' | 'decision_council';
+    annualRank: number | null;
+    promotionThresholdSnapshot: string | null;
+    systemRecommendation: string | null;
+    configVersionId: string | null;
+  } | null = null;
+
+  let engineRecommendation: string;
+  let existingId: string | null = null;
+  let previousDecision: string | null = null;
+
+  if (existingResults.length > 0) {
+    const existing = existingResults[0];
+    existingId = existing.id;
+    previousDecision = existing.finalDecision;
+    engineRecommendation = (existing.systemRecommendation ?? 'THRESHOLD_NOT_CONFIGURED').toUpperCase().replace(/-/g, '_');
+  } else {
+    // Compute from scratch (read-only, no DB write yet)
     const classResults = await getAnnualClassResults({
       academicYearId: enr.academicYearId,
       classroomId: assignment.classroomId,
@@ -124,14 +145,10 @@ export async function recordFinalDecision(params: RecordDecisionParams): Promise
     const rank = studentRow.annualRank;
 
     // Derive recommendation
-    const rec = deriveRecommendation(
-      annual.status,
-      annual.annualOfficial,
-      classResults.promotionThreshold,
-    );
+    const rec = deriveRecommendation(annual.status, annual.annualOfficial, classResults.promotionThreshold);
+    engineRecommendation = rec;
 
-    // Get config version
-    // Get classroom levelId for config lookup
+    // Get config version ID
     const [cls] = await db.select({ levelId: classroom.levelId })
       .from(classroom)
       .where(eq(classroom.id, assignment.classroomId))
@@ -145,8 +162,8 @@ export async function recordFinalDecision(params: RecordDecisionParams): Promise
         eq(pedagogicalConfig.status, 'active'),
       )).limit(1);
 
-    const inserted = await db.insert(annualResult).values({
-      enrollmentId,
+    // Store snapshot data for later transactional insert (no write yet)
+    snapshotData = {
       regularRaw: annual.regularRaw,
       passageRaw: annual.passageRaw,
       annualRaw: annual.annualRaw,
@@ -154,17 +171,14 @@ export async function recordFinalDecision(params: RecordDecisionParams): Promise
       calculationStatus: annual.status.toLowerCase() as 'calculated' | 'incomplete' | 'decision_council',
       annualRank: rank?.rank ?? null,
       promotionThresholdSnapshot: classResults.promotionThreshold,
-      systemRecommendation: ENGINE_TO_DB_RECOMMENDATION[rec] as 'proposed_admitted' | 'proposed_repeat' | 'decision_council' | 'incomplete' | 'threshold_not_configured' | null,
+      systemRecommendation: ENGINE_TO_DB_RECOMMENDATION[rec] ?? null,
       configVersionId: config?.id ?? null,
-    }).returning();
-
-    existingResult = inserted;
+    };
   }
 
-  const existing = existingResult[0];
-
-  // 3. Validate recommendation state
-  const engineRecommendation = (existing.systemRecommendation ?? 'THRESHOLD_NOT_CONFIGURED').toUpperCase().replace(/-/g, '_');
+  // ─────────────────────────────────────────────
+  // PHASE 2: VALIDATION — Before ANY write
+  // ─────────────────────────────────────────────
 
   const validation = validateDecision(
     engineRecommendation as 'PROPOSED_ADMITTED' | 'PROPOSED_REPEAT' | 'DECISION_COUNCIL' | 'INCOMPLETE' | 'THRESHOLD_NOT_CONFIGURED',
@@ -173,55 +187,96 @@ export async function recordFinalDecision(params: RecordDecisionParams): Promise
   );
 
   if (!validation.allowed) {
-    throw new Error(validation.reason ?? 'Décision non autorisée.');
+    throw new PedagogyDomainError(
+      'DECISION_VALIDATION',
+      validation.reason ?? 'Décision non autorisée.',
+      422,
+    );
   }
 
-  // 4. Record previous decision for audit
-  const previousDecision = existing.finalDecision;
+  // ─────────────────────────────────────────────
+  // PHASE 3: TRANSACTIONAL WRITE — Atomic decision + audit
+  // ─────────────────────────────────────────────
 
-  // 5. Persist final decision (snapshot — do NOT rewrite annualOfficial)
-  const [updated] = await db.update(annualResult)
-    .set({
-      finalDecision: REQUESTED_TO_DB_DECISION[finalDecision] as 'admitted' | 'repeat' | 'admitted_by_derogation',
-      decisionJustification: justification ?? null,
-      decidedBy: actor.isGhost ? null : actor.id,
-      decidedAt: new Date(),
-    })
-    .where(eq(annualResult.id, existing.id))
-    .returning();
-
-  // 6. Audit
   const auditActor = sessionToAuditActor(actor);
-  void logPedagogyAudit({
-    action: 'annual_final_decision_recorded',
-    entity: 'annual_result',
-    entityId: updated.id,
-    schoolId,
-    oldValue: previousDecision ? JSON.stringify({ previousDecision }) : undefined,
-    newValue: JSON.stringify({
-      finalDecision: updated.finalDecision,
-      justification: updated.decisionJustification,
-      annualOfficial: updated.annualOfficial,
-    }),
-    context: {
-      enrollmentId,
-      studentId: enr.studentId,
-      academicYearId: enr.academicYearId,
-      recommendation: existing.systemRecommendation,
-    },
-    ...auditActor,
-    ipAddress,
+  const dbDecision = REQUESTED_TO_DB_DECISION[finalDecision] as 'admitted' | 'repeat' | 'admitted_by_derogation';
+  const decidedByValue = actor.isGhost ? null : actor.id;
+  const decidedAtValue = new Date();
+
+  const result = await db.transaction(async (tx) => {
+    let resultId: string;
+
+    if (existingId) {
+      // UPDATE existing annual_result with decision fields only
+      const [updated] = await tx.update(annualResult)
+        .set({
+          finalDecision: dbDecision,
+          decisionJustification: justification ?? null,
+          decidedBy: decidedByValue,
+          decidedAt: decidedAtValue,
+        })
+        .where(eq(annualResult.id, existingId))
+        .returning();
+      resultId = updated.id;
+    } else {
+      // INSERT new annual_result with snapshot + decision in one operation
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const [inserted] = await tx.insert(annualResult).values({
+        enrollmentId,
+        regularRaw: snapshotData!.regularRaw,
+        passageRaw: snapshotData!.passageRaw,
+        annualRaw: snapshotData!.annualRaw,
+        annualOfficial: snapshotData!.annualOfficial,
+        calculationStatus: snapshotData!.calculationStatus,
+        annualRank: snapshotData!.annualRank,
+        promotionThresholdSnapshot: snapshotData!.promotionThresholdSnapshot,
+        systemRecommendation: snapshotData!.systemRecommendation,
+        configVersionId: snapshotData!.configVersionId,
+        finalDecision: dbDecision,
+        decisionJustification: justification ?? null,
+        decidedBy: decidedByValue,
+        decidedAt: decidedAtValue,
+      } as any).returning();
+      resultId = inserted.id;
+    }
+
+    // Audit within same transaction — atomic with decision
+    await tx.insert(auditLog).values({
+      action: 'annual_final_decision_recorded',
+      entity: 'annual_result',
+      entityId: resultId,
+      schoolId: schoolId && schoolId !== '' ? schoolId : null,
+      oldValue: previousDecision ? JSON.stringify({ previousDecision }) : null,
+      newValue: JSON.stringify({
+        finalDecision: dbDecision,
+        justification: justification ?? null,
+      }),
+      context: JSON.stringify({
+        enrollmentId,
+        studentId: enr.studentId,
+        academicYearId: enr.academicYearId,
+        recommendation: snapshotData?.systemRecommendation ?? existingResults[0]?.systemRecommendation,
+      }),
+      userId: auditActor.actorId ?? null,
+      actorType: auditActor.actorType ?? null,
+      actorIdentifier: auditActor.actorIdentifier ?? null,
+      ipAddress: ipAddress ?? null,
+    });
+
+    // Read final state for return
+    const [final] = await tx.select().from(annualResult).where(eq(annualResult.id, resultId));
+    return final;
   });
 
   return {
-    id: updated.id,
-    enrollmentId: updated.enrollmentId,
-    calculationStatus: updated.calculationStatus,
-    annualOfficial: updated.annualOfficial,
-    systemRecommendation: updated.systemRecommendation,
-    finalDecision: updated.finalDecision ?? '',
-    decisionJustification: updated.decisionJustification,
-    decidedBy: updated.decidedBy,
-    decidedAt: (updated.decidedAt ?? null) as Date | null,
+    id: result.id,
+    enrollmentId: result.enrollmentId,
+    calculationStatus: result.calculationStatus,
+    annualOfficial: result.annualOfficial,
+    systemRecommendation: result.systemRecommendation,
+    finalDecision: result.finalDecision ?? '',
+    decisionJustification: result.decisionJustification,
+    decidedBy: result.decidedBy,
+    decidedAt: (result.decidedAt ?? null) as Date | null,
   };
 }

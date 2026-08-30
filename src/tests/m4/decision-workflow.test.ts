@@ -108,15 +108,16 @@ describe('M4 Decision Workflow (DW-01..DW-15)', () => {
 
   // ─── Source-invariant: Audit patterns ───
 
-  // DW-14: Audit emitted on final decision (logPedagogyAudit called)
-  it('DW-14: Audit emitted on final decision (logPedagogyAudit called in decision service)', () => {
-    expect(decisionService).toContain('logPedagogyAudit');
+  // DW-14: Audit emitted on final decision (audit_log insert inside transaction)
+  it('DW-14: Audit emitted on final decision (audit_log insert in decision service)', () => {
+    // Audit is now written directly via tx.insert(auditLog) inside db.transaction
     expect(decisionService).toContain('annual_final_decision_recorded');
+    expect(decisionService).toContain('auditLog');
   });
 
   // DW-15: previous decision included in audit (previousDecision variable exists and is used)
   it('DW-15: previous decision included in audit (previousDecision variable)', () => {
     expect(decisionService).toContain('previousDecision');
-    expect(decisionService).toContain('oldValue: previousDecision');
+    expect(decisionService).toContain('oldValue: previousDecision ?');
   });
 });

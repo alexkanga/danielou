@@ -206,9 +206,16 @@ export default function AnnualResultsPage() {
 
   const contextClassroom = ctxMeta?.classrooms.find(c => c.id === ctxValue.classroomId);
 
+  // Decision: whether justification is required for current action
+  const justificationRequired = !!(
+    decisionAction === 'ADMITTED_BY_DEROGATION' ||
+    (decisionDialog?.recommendation === 'DECISION_COUNCIL' && decisionAction)
+  );
+  const canSubmit = !!(decisionAction && (!justificationRequired || decisionJustification.trim().length > 0));
+
   // Decision handler
   const handleDecisionSubmit = async () => {
-    if (!decisionDialog) return;
+    if (!decisionDialog || !canSubmit) return;
     setDecisionLoading(true);
     try {
       const res = await fetch('/api/annual-results/decision', {
@@ -229,6 +236,7 @@ export default function AnnualResultsPage() {
       setDecisionJustification('');
       void loadData();
     } catch (e) {
+      // Dialog stays open on validation failure — do NOT close
       toast.error(e instanceof Error ? e.message : 'Erreur');
     } finally {
       setDecisionLoading(false);
@@ -568,7 +576,7 @@ export default function AnnualResultsPage() {
             <Button variant="outline" onClick={() => setDecisionDialog(null)}>Annuler</Button>
             <Button
               onClick={() => { void handleDecisionSubmit(); }}
-              disabled={decisionLoading || !decisionAction}
+              disabled={decisionLoading || !canSubmit}
             >
               {decisionLoading ? 'Enregistrement…' : 'Enregistrer'}
             </Button>

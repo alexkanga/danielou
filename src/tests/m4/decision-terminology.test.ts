@@ -145,8 +145,8 @@ describe('M4 Decision Workflow Logic (DEC-01..DEC-12)', () => {
   });
 
   // DEC-12: audit emitted
-  it('DEC-12: audit emitted (logPedagogyAudit called)', () => {
-    expect(decisionService).toContain('logPedagogyAudit');
+  it('DEC-12: audit emitted (audit_log insert in transaction)', () => {
     expect(decisionService).toContain('annual_final_decision_recorded');
+    expect(decisionService).toContain('auditLog');
   });
 });
