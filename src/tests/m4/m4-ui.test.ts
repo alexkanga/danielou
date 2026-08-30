@@ -56,9 +56,9 @@ describe('M4 Annual Results UI (UI-01..UI-11)', () => {
     expect(page).toContain('Seuil de promotion non configuré');
   });
 
-  // ─── UI-08: recommendation shown when threshold configured ───
-  it('UI-08: recommendation shown when threshold configured (Proposition column header)', () => {
-    expect(page).toContain('Proposition');
+  // ─── UI-08: recommendation shown when threshold configured (Statut provisoire column header) ───
+  it('UI-08: recommendation shown when threshold configured (Statut provisoire column header)', () => {
+    expect(page).toContain('Statut provisoire');
   });
 
   // ─── UI-09: derogation requires justification ───

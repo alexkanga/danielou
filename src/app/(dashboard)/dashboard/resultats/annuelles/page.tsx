@@ -90,17 +90,17 @@ const ANNUAL_STATUS_CONFIG: Record<string, { label: string; className: string }>
 };
 
 const RECOMMENDATION_CONFIG: Record<string, { label: string; className: string }> = {
-  PROPOSED_ADMITTED: { label: 'Admis', className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' },
+  PROPOSED_ADMITTED: { label: 'Admissibilité', className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' },
   PROPOSED_REPEAT: { label: 'Redoublement', className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' },
   DECISION_COUNCIL: { label: 'Conseil requis', className: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' },
-  INCOMPLETE: { label: 'Incomplet', className: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' },
+  INCOMPLETE: { label: 'Dossier incomplet', className: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' },
   THRESHOLD_NOT_CONFIGURED: { label: 'Seuil non configuré', className: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200' },
 };
 
 const DECISION_CONFIG: Record<string, { label: string; className: string }> = {
   admitted: { label: 'Admis', className: 'bg-emerald-200 text-emerald-900 dark:bg-emerald-800 dark:text-emerald-100' },
-  repeat: { label: 'Redoublement', className: 'bg-red-200 text-red-900 dark:bg-red-800 dark:text-red-100' },
-  admitted_by_derogation: { label: 'Admis par dérogation', className: 'bg-blue-200 text-blue-900 dark:bg-blue-800 dark:text-blue-100' },
+  repeat: { label: 'Redouble', className: 'bg-red-200 text-red-900 dark:bg-red-800 dark:text-red-100' },
+  admitted_by_derogation: { label: 'Admis sur dérogation', className: 'bg-blue-200 text-blue-900 dark:bg-blue-800 dark:text-blue-100' },
 };
 
 const CELL_STATUS_CONFIG: Record<string, { label: string; className: string }> = {
@@ -136,7 +136,7 @@ export default function AnnualResultsPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Decision dialog state
-  const [decisionDialog, setDecisionDialog] = useState<{ enrollmentId: string; studentName: string; recommendation: string; currentDecision?: string | null } | null>(null);
+  const [decisionDialog, setDecisionDialog] = useState<{ enrollmentId: string; studentName: string; annualOfficial: string | null; annualStatus: string; recommendation: string; currentDecision?: string | null } | null>(null);
   const [decisionAction, setDecisionAction] = useState<string>('');
   const [decisionJustification, setDecisionJustification] = useState('');
   const [decisionLoading, setDecisionLoading] = useState(false);
@@ -239,14 +239,14 @@ export default function AnnualResultsPage() {
   const getAvailableActions = (recommendation: string, currentDecision?: string | null) => {
     if (currentDecision) return []; // Already decided
     switch (recommendation) {
-      case 'PROPOSED_ADMITTED': return [{ value: 'ADMITTED', label: 'Admettre' }];
+      case 'PROPOSED_ADMITTED': return [{ value: 'ADMITTED', label: 'Admis' }];
       case 'PROPOSED_REPEAT': return [
-        { value: 'REPEAT', label: 'Redoubler' },
-        { value: 'ADMITTED_BY_DEROGATION', label: 'Admettre par dérogation' },
+        { value: 'REPEAT', label: 'Redouble' },
+        { value: 'ADMITTED_BY_DEROGATION', label: 'Admis sur dérogation' },
       ];
       case 'DECISION_COUNCIL': return [
-        { value: 'ADMITTED', label: 'Admettre' },
-        { value: 'REPEAT', label: 'Redoubler' },
+        { value: 'ADMITTED', label: 'Admis' },
+        { value: 'REPEAT', label: 'Redouble' },
       ];
       default: return [];
     }
@@ -361,8 +361,8 @@ export default function AnnualResultsPage() {
                     )}
                     <th className="px-4 py-3 text-center font-medium min-w-[90px]">Moy. annuelle</th>
                     <th className="px-4 py-3 text-center font-medium min-w-[70px]">Rang</th>
-                    <th className="px-3 py-3 text-center font-medium min-w-[110px]">Proposition</th>
-                    <th className="px-3 py-3 text-center font-medium min-w-[130px]">Décision finale</th>
+                    <th className="px-3 py-3 text-center font-medium min-w-[130px]">Statut provisoire</th>
+                    <th className="px-3 py-3 text-center font-medium min-w-[150px]">Décision du conseil</th>
                     <th className="px-3 py-3 text-center font-medium min-w-[80px]">Actions</th>
                   </tr>
                 </thead>
@@ -456,7 +456,7 @@ export default function AnnualResultsPage() {
                               )}
                             </div>
                           ) : rec === 'INCOMPLETE' ? (
-                            <span className="text-xs text-muted-foreground">Résultat incomplet</span>
+                            <span className="text-xs text-muted-foreground italic">Décision impossible — dossier incomplet</span>
                           ) : rec === 'THRESHOLD_NOT_CONFIGURED' ? (
                             <span className="text-xs text-muted-foreground">Seuil non configuré</span>
                           ) : (
@@ -477,6 +477,8 @@ export default function AnnualResultsPage() {
                                 setDecisionDialog({
                                   enrollmentId: s.enrollmentId,
                                   studentName: `${s.studentLastName} ${s.studentFirstName}`,
+                                  annualOfficial: s.annual.annualOfficial,
+                                  annualStatus: s.annual.status,
                                   recommendation: rec,
                                 });
                                 setDecisionAction(actions[0].value);
@@ -485,6 +487,8 @@ export default function AnnualResultsPage() {
                             >
                               Décider
                             </Button>
+                          ) : rec === 'INCOMPLETE' ? (
+                            <span className="text-xs text-muted-foreground italic">Décision impossible</span>
                           ) : (
                             <span className="text-xs text-muted-foreground">—</span>
                           )}
@@ -516,19 +520,22 @@ export default function AnnualResultsPage() {
       <Dialog open={!!decisionDialog} onOpenChange={(open) => { if (!open) setDecisionDialog(null); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Décision finale</DialogTitle>
+            <DialogTitle>Décision du conseil</DialogTitle>
           </DialogHeader>
           {decisionDialog && (
             <div className="space-y-4 py-2">
               <div className="rounded-md bg-muted/50 p-3 text-sm space-y-1">
-                <p className="font-medium">{decisionDialog.studentName}</p>
+                <p className="font-medium">Élève : {decisionDialog.studentName}</p>
                 <p className="text-muted-foreground">
-                  Proposition : {RECOMMENDATION_CONFIG[decisionDialog.recommendation]?.label ?? decisionDialog.recommendation}
+                  Moyenne annuelle : {decisionDialog.annualStatus === 'CALCULATED' && decisionDialog.annualOfficial ? formatNumber(decisionDialog.annualOfficial) : '—'}
+                </p>
+                <p className="text-muted-foreground">
+                  Statut provisoire : {RECOMMENDATION_CONFIG[decisionDialog.recommendation]?.label ?? decisionDialog.recommendation}
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label>Décision</Label>
+                <Label>Décision du conseil</Label>
                 <div className="flex flex-wrap gap-2">
                   {getAvailableActions(decisionDialog.recommendation).map(a => (
                     <Button
