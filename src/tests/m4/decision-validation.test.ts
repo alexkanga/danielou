@@ -79,23 +79,23 @@ describe('M4 Decision Atomicity & No-Write (DEC-VAL-08..12)', () => {
   it('DEC-VAL-08: invalid request leaves decidedBy NULL (no partial write)', () => {
     // The decidedBy is set in the .set() or .values() inside the transaction.
     // Since validation rejects before the transaction, decidedBy is never touched.
-    // Verify: decidedBy assignment is inside db.transaction block
-    const txBlock = decisionService.match(/db\.transaction\([\s\S]*\)\);/);
+    // Verify: decidedBy assignment is inside transaction block
+    const txBlock = decisionService.match(/(?:db|txDb)\.transaction\([\s\S]*?\)\);/);
     expect(txBlock).not.toBeNull();
     expect(txBlock![0]).toContain('decidedBy');
   });
 
   // DEC-VAL-09: invalid request leaves decidedAt NULL
   it('DEC-VAL-09: invalid request leaves decidedAt NULL (no partial write)', () => {
-    const txBlock = decisionService.match(/db\.transaction\([\s\S]*\)\);/);
+    const txBlock = decisionService.match(/(?:db|txDb)\.transaction\([\s\S]*?\)\);/);
     expect(txBlock).not.toBeNull();
     expect(txBlock![0]).toContain('decidedAt');
   });
 
   // DEC-VAL-10: invalid request creates no decision audit event
   it('DEC-VAL-10: invalid request creates no decision audit (audit inside transaction)', () => {
-    // Audit insert must be inside the db.transaction block
-    const txBlock = decisionService.match(/db\.transaction\([\s\S]*\)\);/);
+    // Audit insert must be inside the transaction block
+    const txBlock = decisionService.match(/(?:db|txDb)\.transaction\([\s\S]*?\)\);/);
     expect(txBlock).not.toBeNull();
     expect(txBlock![0]).toContain('annual_final_decision_recorded');
   });
@@ -103,8 +103,8 @@ describe('M4 Decision Atomicity & No-Write (DEC-VAL-08..12)', () => {
   // DEC-VAL-11: persistence failure rolls back audit/decision atomically
   it('DEC-VAL-11: decision + audit are in a single db.transaction', () => {
     // Verify both the decision write (insert or update) and audit insert
-    // are inside the same db.transaction callback
-    const txBlock = decisionService.match(/db\.transaction\([\s\S]*\)\);/);
+    // are inside the same transaction callback
+    const txBlock = decisionService.match(/(?:db|txDb)\.transaction\([\s\S]*?\)\);/);
     expect(txBlock).not.toBeNull();
     const block = txBlock![0];
     // Must have decision write
@@ -117,8 +117,8 @@ describe('M4 Decision Atomicity & No-Write (DEC-VAL-08..12)', () => {
   // DEC-VAL-12: audit failure rolls back decision atomically
   it('DEC-VAL-12: audit inside same transaction as decision (rollback on failure)', () => {
     // Both tx.insert for auditLog and tx.update/tx.insert for annualResult
-    // must be in the same async callback passed to db.transaction
-    const txCallback = decisionService.match(/db\.transaction\(async \(tx\) => \{[\s\S]*\}\)/);
+    // must be in the same async callback passed to transaction
+    const txCallback = decisionService.match(/(?:db|txDb)\.transaction\(async \(tx\) => \{[\s\S]*\}\s*\);/);
     expect(txCallback).not.toBeNull();
     const block = txCallback![0];
     // Count tx. operations

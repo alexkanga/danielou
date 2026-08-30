@@ -15,6 +15,7 @@
 
 import { eq, and } from 'drizzle-orm';
 import { db } from '@/lib/db';
+import { getTxDb } from '@/lib/db/tx';
 import { annualResult, pedagogicalConfig, classroom, enrollment, classroomAssignment, auditLog } from '@/lib/db/schema';
 import { getAnnualClassResults } from './annual-data.service';
 import { deriveRecommendation, validateDecision, type FinalDecisionValue } from './recommendation-engine';
@@ -203,7 +204,11 @@ export async function recordFinalDecision(params: RecordDecisionParams): Promise
   const decidedByValue = actor.isGhost ? null : actor.id;
   const decidedAtValue = new Date();
 
-  const result = await db.transaction(async (tx) => {
+  // Use txDb (neon-serverless/Pool) for transactional writes.
+  // The default db uses neon-http which does NOT support transactions.
+  const txDb = getTxDb();
+
+  const result = await txDb.transaction(async (tx) => {
     let resultId: string;
 
     if (existingId) {
@@ -220,7 +225,6 @@ export async function recordFinalDecision(params: RecordDecisionParams): Promise
       resultId = updated.id;
     } else {
       // INSERT new annual_result with snapshot + decision in one operation
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const [inserted] = await tx.insert(annualResult).values({
         enrollmentId,
         regularRaw: snapshotData!.regularRaw,
@@ -236,6 +240,7 @@ export async function recordFinalDecision(params: RecordDecisionParams): Promise
         decisionJustification: justification ?? null,
         decidedBy: decidedByValue,
         decidedAt: decidedAtValue,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any).returning();
       resultId = inserted.id;
     }
