@@ -14,6 +14,8 @@
     "db:seed": "tsx src/lib/db/seed.ts",
     "test": "vitest run",
     "test:unit": "vitest run --dir src/tests/unit",
+    "test:quality": "vitest run --exclude 'src/tests/ws002/composition-workspace.test.ts' --exclude 'src/tests/ws002/composition-data-service.test.ts' --exclude 'src/tests/compositions-hf3-regression.test.ts' --exclude 'src/tests/evaluations-hf2-regression.test.ts' --exclude 'src/tests/hf3-r1-regression.test.ts'",
+    "test:db-integration": "vitest run --config vitest.config.db.ts src/tests/ws002/composition-workspace.test.ts src/tests/ws002/composition-data-service.test.ts src/tests/compositions-hf3-regression.test.ts src/tests/evaluations-hf2-regression.test.ts src/tests/hf3-r1-regression.test.ts",
     "test:watch": "vitest",
     "check:sqlite": "bash scripts/check-no-sqlite.sh"
   },

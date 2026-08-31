@@ -100,6 +100,8 @@ export const createPedagogicalConfigSchema = z.object({
   conductIncludedInAverage: z.boolean().default(false),
   conductCoefficient: z.coerce.number().min(0).max(99.99).optional().nullable(),
   conductScale: z.coerce.number().int().min(1).max(100).optional().nullable(),
+  /** M4: Seuil de promotion /10. NULL = non configuré. */
+  promotionThreshold: z.coerce.number().min(0, 'Le seuil doit être ≥ 0').max(10, 'Le seuil ne peut pas dépasser 10').optional().nullable(),
   description: z.string().max(1000).optional().nullable(),
 });
 export type CreatePedagogicalConfigInput = z.infer<typeof createPedagogicalConfigSchema>;

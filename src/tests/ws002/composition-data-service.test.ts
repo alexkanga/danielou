@@ -1,17 +1,18 @@
 /**
  * WS-002-M2 — Composition Data Service Integration Tests
  *
- * Real PostgreSQL evidence for DB→M1 mapping.
- * Creates unique test fixtures in Preview DB, tests, then cleans up.
+ * PostgreSQL evidence for DB→M1 mapping.
+ * Creates unique test fixtures, tests, then cleans up.
  *
- * Required env: DATABASE_URL pointing to non-production Neon PostgreSQL.
+ * Required env: DATABASE_URL pointing to a PostgreSQL database.
+ * Compatible with both Neon and standard PostgreSQL (CI service container).
  */
 
 // @vitest-environment node
 
 import { describe, it, expect, afterAll, beforeAll } from 'vitest';
-import { neon } from '@neondatabase/serverless';
 import { randomUUID } from 'crypto';
+import { createSqlClient } from '@/tests/helpers/sql-client';
 import {
   getCompositionStudentResult,
   getCompositionClassResults,
@@ -23,7 +24,7 @@ import { NotFoundError } from '@/lib/services/pedagogy/errors';
 // TEST DATABASE CLIENT (direct SQL for fixtures)
 // ─────────────────────────────────────────────
 
-const sql = neon(process.env.DATABASE_URL!);
+const sql = createSqlClient(process.env.DATABASE_URL!);
 
 // ─────────────────────────────────────────────
 // FIXTURE IDs

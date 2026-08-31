@@ -36,8 +36,8 @@ jobs:
       - name: Type check
         run: pnpm typecheck
 
-      - name: Tests
-        run: pnpm test
+      - name: Unit and component tests
+        run: pnpm test:quality
 
       - name: Build
         run: pnpm build
@@ -47,3 +47,45 @@ jobs:
           AUTH_SECRET: ci-secret-minimum-32-characters-long-enough
           BETTER_AUTH_SECRET: ci-secret-minimum-32-characters-long-enough
           BETTER_AUTH_URL: http://localhost:3000
+
+  db-integration:
+    name: PostgreSQL Integration
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: danielou_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply database schema
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/danielou_ci
+        run: node scripts/ci-apply-migrations.mjs
+
+      - name: DB integration tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/danielou_ci
+        run: pnpm test:db-integration

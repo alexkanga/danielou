@@ -10,42 +10,64 @@
  * T3: Response contains only classrooms for the requested year.
  * T4: Nonexistent year UUID returns empty result, not 500.
  * T5: School scope remains intact (no cross-school leakage).
+ *
+ * Self-contained: creates own fixtures, uses process.env.DATABASE_URL.
+ * Compatible with both Neon and standard PostgreSQL CI containers.
  */
 
 // @vitest-environment node
 
-import { describe, it, expect, beforeAll } from 'vitest';
-import { neon } from '@neondatabase/serverless';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
+import { randomUUID } from 'crypto';
+import { createSqlClient, closeSqlClient } from '@/tests/helpers/sql-client';
 import { parsePagination } from '@/lib/data-access/pagination';
 
-// ─────────────────────────────────────────────
-// DB connection (same pattern as HF2 regression tests)
-// ─────────────────────────────────────────────
-const envContent = readFileSync(resolve('.env.local'), 'utf8');
-const envMatch = envContent.match(/^DATABASE_URL=(.+)$/m);
-const rawUrl = (envMatch?.[1] ?? '').trim().replace(/^["'\u0027\u0022]|["'\u0027\u0022]$/g, '');
-const cleanUrl = rawUrl
-  .replace(/[?&]channel_binding=[^&]*/g, '')
-  .replace(/[?&]sslmode=[^&]*/g, '')
-  .replace(/[?&]$/, '');
-
-const sql = neon(cleanUrl);
+const sql = createSqlClient(process.env.DATABASE_URL!);
 
 describe('HF3-R1 — classroom academic year filtering + pagination fix', () => {
   let schoolId: string;
+  let school2Id: string;
+  let levelId: string;
+  let level2Id: string;
   let validYearId: string;
+  let classroomId1: string;
+  let classroomId2: string;
+  let otherSchoolClassroomId: string;
 
   beforeAll(async () => {
-    const schools = await sql`SELECT id FROM school LIMIT 1`;
-    if (schools.length === 0) throw new Error('No school in Preview/Test DB');
-    schoolId = (schools as unknown as { id: string }[])[0].id;
+    if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL not set');
 
-    const years = await sql`SELECT id, name FROM academic_year ORDER BY start_date`;
-    const typedYears = years as unknown as { id: string; name: string }[];
-    if (typedYears.length >= 1) validYearId = typedYears[0].id;
-  });
+    schoolId = randomUUID();
+    school2Id = randomUUID();
+    levelId = randomUUID();
+    level2Id = randomUUID();
+    validYearId = randomUUID();
+    classroomId1 = randomUUID();
+    classroomId2 = randomUUID();
+    otherSchoolClassroomId = randomUUID();
+
+    // School 1
+    await sql`INSERT INTO school (id, name, created_at, updated_at) VALUES (${schoolId}, 'HF3R1 School', now(), now())`;
+    await sql`INSERT INTO level (id, school_id, name, sort_order, created_at, updated_at) VALUES (${levelId}, ${schoolId}, 'HF3R1 Level', 1, now(), now())`;
+    await sql`INSERT INTO academic_year (id, school_id, name, start_date, end_date, status, created_at, updated_at) VALUES (${validYearId}, ${schoolId}, 'HF3R1 Year', '2025-09-01', '2026-06-30', 'active', now(), now())`;
+    await sql`INSERT INTO classroom (id, level_id, academic_year_id, name, created_at, updated_at) VALUES (${classroomId1}, ${levelId}, ${validYearId}, 'HF3R1-6A', now(), now())`;
+    await sql`INSERT INTO classroom (id, level_id, academic_year_id, name, created_at, updated_at) VALUES (${classroomId2}, ${levelId}, ${validYearId}, 'HF3R1-6B', now(), now())`;
+
+    // School 2 (for cross-school leakage test)
+    await sql`INSERT INTO school (id, name, created_at, updated_at) VALUES (${school2Id}, 'HF3R1 Other School', now(), now())`;
+    await sql`INSERT INTO level (id, school_id, name, sort_order, created_at, updated_at) VALUES (${level2Id}, ${school2Id}, 'HF3R1 Other Level', 1, now(), now())`;
+    await sql`INSERT INTO classroom (id, level_id, academic_year_id, name, created_at, updated_at) VALUES (${otherSchoolClassroomId}, ${level2Id}, ${validYearId}, 'HF3R1-Other', now(), now())`;
+  }, 30_000);
+
+  afterAll(async () => {
+    await sql`DELETE FROM classroom WHERE id IN (${classroomId1}, ${classroomId2}, ${otherSchoolClassroomId})`;
+    await sql`DELETE FROM academic_year WHERE id = ${validYearId}`;
+    await sql`DELETE FROM level WHERE id IN (${levelId}, ${level2Id})`;
+    await sql`DELETE FROM school WHERE id IN (${schoolId}, ${school2Id})`;
+    await closeSqlClient(sql);
+  }, 30_000);
 
   // ─────────────────────────────────────────────
   // T1: Without academicYearId, parsePagination + query works
@@ -72,8 +94,6 @@ describe('HF3-R1 — classroom academic year filtering + pagination fix', () => 
   // T2: The ACTUAL failing path — limit=200 + academicYearId
   // ─────────────────────────────────────────────
   it('T2 — limit=200 with academicYearId returns valid result (not ZodError)', async () => {
-    if (!validYearId) { console.log('SKIP T2: no valid year in DB'); return; }
-
     // This is the EXACT scenario that caused the 500:
     // Compositions page sends academicYearId + limit=200
     const params = new URLSearchParams({
@@ -102,8 +122,6 @@ describe('HF3-R1 — classroom academic year filtering + pagination fix', () => 
   // T3: Response contains ONLY classrooms for the requested year
   // ─────────────────────────────────────────────
   it('T3 — filtered response contains only classrooms belonging to requested year', async () => {
-    if (!validYearId) { console.log('SKIP T3: no valid year in DB'); return; }
-
     const rows = await sql`
       SELECT c.id, c.academic_year_id
       FROM classroom c
@@ -140,8 +158,6 @@ describe('HF3-R1 — classroom academic year filtering + pagination fix', () => 
   // T5: School scope remains intact
   // ─────────────────────────────────────────────
   it('T5 — school scope is enforced (no cross-school leakage)', async () => {
-    if (!validYearId) { console.log('SKIP T5: no valid year in DB'); return; }
-
     // All classrooms must belong to the school
     const rows = await sql`
       SELECT c.id, l.school_id

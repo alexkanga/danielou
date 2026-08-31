@@ -127,6 +127,12 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: 'Award',
         requiredPermissions: ['school:grades:read'],
       },
+      {
+        label: 'Résultats annuels',
+        href: '/dashboard/resultats/annuelles',
+        icon: 'Award',
+        requiredPermissions: ['school:annual_results:read'],
+      },
     ],
   },
   {
@@ -307,6 +313,13 @@ export const BREADCRUMB_MAP: Array<{
     items: [
       { href: '/dashboard', label: 'Accueil', requiredPermissions: [] },
       { href: '/dashboard/saisie-notes', label: 'Saisie des notes', requiredPermissions: ['school:grades:manage'] },
+    ],
+  },
+  {
+    prefix: '/dashboard/resultats/annuelles',
+    items: [
+      { href: '/dashboard', label: 'Accueil', requiredPermissions: [] },
+      { href: '/dashboard/resultats/annuelles', label: 'Résultats annuels', requiredPermissions: ['school:annual_results:read'] },
     ],
   },
   {
