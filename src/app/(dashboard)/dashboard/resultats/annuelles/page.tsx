@@ -487,8 +487,8 @@ export default function AnnualResultsPage() {
               <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
               <Input placeholder="Rechercher un élève..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8 h-9" />
             </div>
-            <Select value={statusFilter || undefined} onValueChange={(v) => setStatusFilter(v === '__all__' ? '' : v)}>
-              <SelectTrigger size="sm" className="w-[160px]">
+            <Select value={statusFilter || ''} onValueChange={(v) => setStatusFilter(v === '__all__' ? '' : v)}>
+              <SelectTrigger size="sm" className="w-full sm:w-[200px]">
                 <SelectValue placeholder="Statut provisoire" />
               </SelectTrigger>
               <SelectContent>
@@ -499,8 +499,8 @@ export default function AnnualResultsPage() {
                 <SelectItem value="INCOMPLETE">Dossier incomplet</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={decisionFilter || undefined} onValueChange={(v) => setDecisionFilter(v === '__all__' ? '' : v)}>
-              <SelectTrigger size="sm" className="w-[170px]">
+            <Select value={decisionFilter || ''} onValueChange={(v) => setDecisionFilter(v === '__all__' ? '' : v)}>
+              <SelectTrigger size="sm" className="w-full sm:w-[230px]">
                 <SelectValue placeholder="Décision du conseil" />
               </SelectTrigger>
               <SelectContent>
@@ -511,8 +511,8 @@ export default function AnnualResultsPage() {
                 <SelectItem value="__pending__">En attente</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={sortKey || undefined} onValueChange={setSortKey}>
-              <SelectTrigger size="sm" className="w-[180px]">
+            <Select value={sortKey || ''} onValueChange={setSortKey}>
+              <SelectTrigger size="sm" className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Trier par" />
               </SelectTrigger>
               <SelectContent>

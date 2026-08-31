@@ -176,3 +176,52 @@ describe('M4 UX Reset / Empty (M4-UX-RESET-01..04, M4-UX-EMPTY-01)', () => {
     expect(page).toContain('visibleRows.length === 0 && data.students.length > 0');
   });
 });
+
+describe('M4 UX Reset Placeholder (M4-UX-RESET-PH-01..06)', () => {
+  it('RESET-PH-01: initial Statut provisoire select uses placeholder "Statut provisoire"', () => {
+    // Value must be controlled with empty string fallback (not undefined) so placeholder renders
+    expect(page).toContain('value={statusFilter || \'\'}');
+    expect(page).toContain('placeholder="Statut provisoire"');
+  });
+  it('RESET-PH-02: initial Décision du conseil select uses placeholder "Décision du conseil"', () => {
+    expect(page).toContain('value={decisionFilter || \'\'}');
+    expect(page).toContain('placeholder="Décision du conseil"');
+  });
+  it('RESET-PH-03: select provisional status → reset → placeholder restored', () => {
+    // Reset sets statusFilter to '' → value={'' || ''}='' → no matching SelectItem → placeholder shows
+    expect(page).toContain("setStatusFilter('')");
+    expect(page).toContain('value={statusFilter || \'\'}');
+    // No SelectItem has value="" → Radix shows placeholder
+    expect(page).not.toContain('value=""');
+  });
+  it('RESET-PH-04: select council decision → reset → placeholder restored', () => {
+    expect(page).toContain("setDecisionFilter('')");
+    expect(page).toContain('value={decisionFilter || \'\'}');
+  });
+  it('RESET-PH-05: select both filters → reset → both placeholders restored', () => {
+    // handleReset clears all four filter states in one call
+    expect(page).toContain('setSearch(\'\')');
+    expect(page).toContain('setStatusFilter(\'\')');
+    expect(page).toContain('setDecisionFilter(\'\')');
+    expect(page).toContain('setSortKey(\'\')');
+    // All selects use || '' fallback — never || undefined
+    expect(page).not.toContain('|| undefined');
+  });
+  it('RESET-PH-06: reset restores logical ALL rows', () => {
+    // When all filters are empty, visibleRows returns data.students unfiltered
+    expect(page).toContain('if (!data) return []');
+    expect(page).toContain('let filtered = data.students');
+  });
+});
+
+describe('M4 UX Select Width (M4-UX-WIDTH-01..02)', () => {
+  it('WIDTH-01: Décision du conseil trigger has sufficient responsive width for full placeholder', () => {
+    // Must be at least 220px on desktop to display "Décision du conseil" fully
+    expect(page).toMatch(/sm:w-\[2[2-9]\dpx\]/);
+  });
+  it('WIDTH-02: wider select does not remove responsive/mobile behavior', () => {
+    // All filter selects use w-full on mobile and specific width on sm+
+    const wFullCount = (page.match(/w-full sm:w-/g) || []).length;
+    expect(wFullCount).toBeGreaterThanOrEqual(3); // status + decision + sort
+  });
+});
