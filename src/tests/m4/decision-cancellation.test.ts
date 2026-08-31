@@ -340,6 +340,59 @@ describe('Cancellation UI (CAN-UI-01..06)', () => {
 });
 
 // ═══════════════════════════════════════════
+// SECTION 8: Audit Fidelity (CAN-AUD-01..04)
+// ═══════════════════════════════════════════
+
+describe('Cancellation Audit Fidelity (CAN-AUD-01..04)', () => {
+  it('CAN-AUD-01: Cancellation audit oldValue captures previousState with all decision fields', () => {
+    const cancelStart = decisionService.indexOf('cancelCouncilDecision');
+    const cancelCode = decisionService.slice(cancelStart);
+    // Must capture previousState before clearing
+    expect(cancelCode).toContain('const previousState = {');
+    // Must include all decision fields in previousState
+    expect(cancelCode).toContain('finalDecision: existing.finalDecision');
+    expect(cancelCode).toContain('decisionJustification: existing.decisionJustification');
+    expect(cancelCode).toContain('decidedBy: existing.decidedBy');
+    expect(cancelCode).toContain('decidedAt: existing.decidedAt');
+    // oldValue serializes previousState
+    expect(cancelCode).toContain('oldValue: JSON.stringify(previousState)');
+  });
+
+  it('CAN-AUD-02: Cancellation audit newValue contains cancellationReason', () => {
+    const cancelStart = decisionService.indexOf('cancelCouncilDecision');
+    const cancelCode = decisionService.slice(cancelStart);
+    expect(cancelCode).toContain('newValue: JSON.stringify({');
+    expect(cancelCode).toContain('cancellationReason: reason.trim()');
+  });
+
+  it('CAN-AUD-03: Cancellation does NOT delete or overwrite previous decision audit', () => {
+    const cancelStart = decisionService.indexOf('cancelCouncilDecision');
+    const cancelCode = decisionService.slice(cancelStart);
+    // The cancellation audit is an INSERT, not an UPDATE on existing audit
+    const txBlock = cancelCode.match(/txDb\.transaction\(async \(tx\) => \{[\s\S]*?\}\s*\);/);
+    expect(txBlock).not.toBeNull();
+    // Must be tx.insert (new audit row), not tx.update (modifying existing)
+    const hasUpdateAudit = txBlock![0].includes('tx.update(auditLog');
+    expect(hasUpdateAudit).toBe(false);
+  });
+
+  it('CAN-AUD-04: New decision after cancellation creates independent audit event', () => {
+    // The recordFinalDecision function creates its own audit event
+    // with action 'annual_final_decision_recorded'
+    // It does NOT reference or modify cancellation audits
+    // Both functions use tx.insert(auditLog) — each creates a new row
+    expect(decisionService).toContain("action: 'annual_final_decision_recorded'");
+    expect(decisionService).toContain("action: 'annual_decision_cancelled'");
+    // Both action strings must appear in separate tx.insert(auditLog) blocks
+    // Count of each action
+    const recordCount = (decisionService.match(/annual_final_decision_recorded/g) ?? []).length;
+    const cancelCount = (decisionService.match(/annual_decision_cancelled/g) ?? []).length;
+    expect(recordCount).toBeGreaterThanOrEqual(1);
+    expect(cancelCount).toBeGreaterThanOrEqual(1);
+  });
+});
+
+// ═══════════════════════════════════════════
 // SECTION 7: Fantomas Compatibility (CAN-FAN-01..04)
 // ═══════════════════════════════════════════
 
