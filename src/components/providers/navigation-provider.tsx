@@ -47,6 +47,8 @@ interface NavigationContextValue {
   isGhost: boolean;
   /** Est-ce un Super Admin ? */
   isSuperAdmin: boolean;
+  /** Effectif SUPER_ADMIN capability (SUPER_ADMIN or Fantomas/Ghost) */
+  hasSuperAdminCapabilities: boolean;
 }
 
 const NavigationContext = createContext<NavigationContextValue | null>(null);
@@ -106,6 +108,7 @@ export function NavigationProvider({
       platformRoleLabel: PLATFORM_ROLE_LABELS[platformRole],
       isGhost: user.isGhost,
       isSuperAdmin: platformRole === 'super_admin',
+      hasSuperAdminCapabilities: platformRole === 'super_admin' || platformRole === 'ghost',
     }),
     [user, platformRole, schoolRole, schoolMemberships, activeSchoolId, navSections, hasPermission, hasSinglePermission],
   );

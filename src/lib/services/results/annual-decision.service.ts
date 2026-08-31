@@ -4,6 +4,7 @@
  * Handles:
  * - Upserting annual result snapshots
  * - Recording final promotion decisions with full validation
+ * - Cancelling council decisions (privileged: SUPER_ADMIN or Fantomas)
  * - Audit trail for all decision mutations
  *
  * CRITICAL INVARIANTS:
@@ -11,6 +12,7 @@
  * - Decision persistence + audit are atomic (single transaction).
  * - Validation errors use PedagogyDomainError (422), never plain Error (500).
  * - annualOfficial and annualRank are NEVER modified by decision logic.
+ * - Cancellation clears decision fields but preserves mathematical data.
  */
 
 import { eq, and } from 'drizzle-orm';
@@ -283,5 +285,136 @@ export async function recordFinalDecision(params: RecordDecisionParams): Promise
     decisionJustification: result.decisionJustification,
     decidedBy: result.decidedBy,
     decidedAt: (result.decidedAt ?? null) as Date | null,
+  };
+}
+
+// ─────────────────────────────────────────────
+// Cancel Council Decision (SUPER_ADMIN / Fantomas)
+// ─────────────────────────────────────────────
+
+export interface CancelDecisionParams {
+  enrollmentId: string;
+  reason: string;
+  actor: { id: string; isGhost: boolean; platformRole: string };
+  ipAddress?: string;
+  schoolId: string;
+}
+
+export interface CancelDecisionResult {
+  id: string;
+  enrollmentId: string;
+  calculationStatus: string;
+  annualOfficial: string | null;
+  systemRecommendation: string | null;
+  finalDecision: null;
+  decisionJustification: null;
+  decidedBy: null;
+  decidedAt: null;
+}
+
+/**
+ * Cancel an existing council decision.
+ * Authorized for SUPER_ADMIN and Fantomas/Ghost only.
+ * Clears decision fields, preserves all mathematical data.
+ * Decision clearing + cancellation audit are atomic.
+ */
+export async function cancelCouncilDecision(params: CancelDecisionParams): Promise<CancelDecisionResult> {
+  const { enrollmentId, reason, actor, ipAddress, schoolId } = params;
+
+  // ─────────────────────────────────────────────
+  // PHASE 1: VALIDATE cancellation reason
+  // ─────────────────────────────────────────────
+
+  if (!reason || reason.trim().length === 0) {
+    throw new PedagogyDomainError(
+      'CANCELLATION_VALIDATION',
+      'Le motif de l\'annulation est obligatoire.',
+      422,
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  // PHASE 2: READ-ONLY — Load current annual result
+  // ─────────────────────────────────────────────
+
+  const existingResults = await db.select().from(annualResult)
+    .where(eq(annualResult.enrollmentId, enrollmentId))
+    .limit(1);
+
+  if (existingResults.length === 0) {
+    throw new NotFoundError('annual_result', enrollmentId);
+  }
+
+  const existing = existingResults[0];
+
+  if (!existing.finalDecision) {
+    throw new PedagogyDomainError(
+      'CANCELLATION_NO_DECISION',
+      'Aucune décision à annuler.',
+      422,
+    );
+  }
+
+  // Capture previous state for audit BEFORE clearing
+  const previousState = {
+    finalDecision: existing.finalDecision,
+    decisionJustification: existing.decisionJustification,
+    decidedBy: existing.decidedBy,
+    decidedAt: existing.decidedAt,
+    systemRecommendation: existing.systemRecommendation,
+  };
+
+  // ─────────────────────────────────────────────
+  // PHASE 3: TRANSACTIONAL WRITE — Clear decision + audit
+  // ─────────────────────────────────────────────
+
+  const auditActor = sessionToAuditActor(actor);
+  const txDb = getTxDb();
+
+  const result = await txDb.transaction(async (tx) => {
+    // Clear ONLY decision fields — NEVER touch mathematical data
+    const [updated] = await tx.update(annualResult)
+      .set({
+        finalDecision: null,
+        decisionJustification: null,
+        decidedBy: null,
+        decidedAt: null,
+      })
+      .where(eq(annualResult.id, existing.id))
+      .returning();
+
+    // Cancellation audit event (atomic with decision clearing)
+    await tx.insert(auditLog).values({
+      action: 'annual_decision_cancelled',
+      entity: 'annual_result',
+      entityId: existing.id,
+      schoolId: schoolId && schoolId !== '' ? schoolId : null,
+      oldValue: JSON.stringify(previousState),
+      newValue: JSON.stringify({
+        cancellationReason: reason.trim(),
+      }),
+      context: JSON.stringify({
+        enrollmentId,
+        systemRecommendation: existing.systemRecommendation,
+      }),
+      userId: auditActor.actorId ?? null,
+      actorType: auditActor.actorType ?? null,
+      actorIdentifier: auditActor.actorIdentifier ?? null,
+      ipAddress: ipAddress ?? null,
+    });
+
+    return updated;
+  });
+
+  return {
+    id: result.id,
+    enrollmentId: result.enrollmentId,
+    calculationStatus: result.calculationStatus,
+    annualOfficial: result.annualOfficial,
+    systemRecommendation: result.systemRecommendation,
+    finalDecision: null,
+    decisionJustification: null,
+    decidedBy: null,
+    decidedAt: null,
   };
 }

@@ -10,8 +10,9 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Award, RefreshCw, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Award, RefreshCw, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { deriveRecommendation } from '@/lib/services/results/recommendation-engine';
+import { useNavigation } from '@/components/providers/navigation-provider';
 
 // ─────────────────────────────────────────────
 // Types
@@ -212,6 +213,43 @@ export default function AnnualResultsPage() {
     (decisionDialog?.recommendation === 'DECISION_COUNCIL' && decisionAction)
   );
   const canSubmit = !!(decisionAction && (!justificationRequired || decisionJustification.trim().length > 0));
+
+  // Cancellation dialog state
+  const [cancelDialog, setCancelDialog] = useState<{ enrollmentId: string; studentName: string; annualOfficial: string | null; annualStatus: string; recommendation: string; currentDecision: string | null } | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const canCancel = cancelReason.trim().length > 0;
+
+  // Get super admin capability from navigation context
+  const { hasSuperAdminCapabilities } = useNavigation();
+
+  // Cancel handler
+  const handleCancelSubmit = async () => {
+    if (!cancelDialog || !canCancel) return;
+    setCancelLoading(true);
+    try {
+      const res = await fetch('/api/annual-results/decision', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          enrollmentId: cancelDialog.enrollmentId,
+          reason: cancelReason.trim(),
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.error || "Erreur lors de l'annulation de la décision.");
+      }
+      toast.success('Décision du conseil annulée.');
+      setCancelDialog(null);
+      setCancelReason('');
+      void loadData();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erreur');
+    } finally {
+      setCancelLoading(false);
+    }
+  };
 
   // Decision handler
   const handleDecisionSubmit = async () => {
@@ -474,8 +512,32 @@ export default function AnnualResultsPage() {
 
                         {/* Actions */}
                         <td className="px-3 py-3 text-center">
-                          {hasDecision ? (
-                            <CheckCircle className="mx-auto h-4 w-4 text-emerald-600" />
+                          {hasDecision && s.persistedFinalDecision ? (
+                            <div className="flex items-center justify-center gap-1">
+                              <CheckCircle className="h-4 w-4 text-emerald-600" />
+                              {hasSuperAdminCapabilities && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  onClick={() => {
+                                    const rec = getRecommendation(s.annual.status, s.annual.annualOfficial, threshold);
+                                    setCancelDialog({
+                                      enrollmentId: s.enrollmentId,
+                                      studentName: `${s.studentLastName} ${s.studentFirstName}`,
+                                      annualOfficial: s.annual.annualOfficial,
+                                      annualStatus: s.annual.status,
+                                      recommendation: rec,
+                                      currentDecision: s.persistedFinalDecision ?? null,
+                                    });
+                                    setCancelReason('');
+                                  }}
+                                >
+                                  <XCircle className="mr-1 h-3.5 w-3.5" />
+                                  Annuler
+                                </Button>
+                              )}
+                            </div>
                           ) : actions.length > 0 ? (
                             <Button
                               variant="outline"
@@ -579,6 +641,51 @@ export default function AnnualResultsPage() {
               disabled={decisionLoading || !canSubmit}
             >
               {decisionLoading ? 'Enregistrement…' : 'Enregistrer'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Cancellation Dialog */}
+      <Dialog open={!!cancelDialog} onOpenChange={(open) => { if (!open) setCancelDialog(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Annuler la décision du conseil</DialogTitle>
+          </DialogHeader>
+          {cancelDialog && (
+            <div className="space-y-4 py-2">
+              <div className="rounded-md bg-muted/50 p-3 text-sm space-y-1">
+                <p className="font-medium">Élève : {cancelDialog.studentName}</p>
+                <p className="text-muted-foreground">
+                  Moyenne annuelle : {cancelDialog.annualStatus === 'CALCULATED' && cancelDialog.annualOfficial ? formatNumber(cancelDialog.annualOfficial) : '—'}
+                </p>
+                <p className="text-muted-foreground">
+                  Statut provisoire : {RECOMMENDATION_CONFIG[cancelDialog.recommendation]?.label ?? cancelDialog.recommendation}
+                </p>
+                <p className="text-muted-foreground">
+                  Décision actuelle : <span className="font-medium text-foreground">{DECISION_CONFIG[cancelDialog.currentDecision ?? '']?.label ?? cancelDialog.currentDecision ?? '—'}</span>
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cancel-reason">Motif de l'annulation <span className="text-destructive">*</span></Label>
+                <Textarea
+                  id="cancel-reason"
+                  placeholder="Raison de l'annulation…"
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelDialog(null)}>Annuler</Button>
+            <Button
+              variant="destructive"
+              onClick={() => { void handleCancelSubmit(); }}
+              disabled={cancelLoading || !canCancel}
+            >
+              {cancelLoading ? 'Annulation…' : 'Confirmer l\'annulation'}
             </Button>
           </DialogFooter>
         </DialogContent>

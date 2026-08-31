@@ -134,11 +134,48 @@ export function requireGhostGuard(platformRole: PlatformRole, isGhost: boolean):
 
 /**
  * Exige que l'acteur soit SUPER_ADMIN (pas Ghost).
+ * NOTE: For operations where Fantomas should ALSO be allowed,
+ * use requireSuperAdminCapability() instead.
  */
 export function requireSuperAdminGuard(platformRole: PlatformRole): void {
   if (platformRole !== 'super_admin') {
     throw new AuthorizationError('FORBIDDEN');
   }
+}
+
+/**
+ * Effective SUPER_ADMIN capability check.
+ * Returns TRUE for both SUPER_ADMIN and Fantomas/Ghost.
+ * This is the canonical AISE invariant: Fantomas inherits all
+ * SUPER_ADMIN capabilities.
+ *
+ * Semantics:
+ *   "Principal may perform every operation assigned to SUPER_ADMIN."
+ *
+ * It does NOT mean "is literally a normal SUPER_ADMIN account."
+ */
+export function hasSuperAdminCapabilities(platformRole: PlatformRole): boolean {
+  return platformRole === 'super_admin' || platformRole === 'ghost';
+}
+
+/**
+ * Requires effective SUPER_ADMIN capability.
+ * Allows both SUPER_ADMIN and Fantomas/Ghost.
+ * Rejects ADMIN, DIRECTION, TEACHER, and all other ordinary roles.
+ */
+export function requireSuperAdminCapability(platformRole: PlatformRole): void {
+  if (!hasSuperAdminCapabilities(platformRole)) {
+    throw new AuthorizationError('FORBIDDEN');
+  }
+}
+
+/**
+ * Narrow Fantomas identity check.
+ * TRUE only for Ghost/Fantomas.
+ * Normal SUPER_ADMIN returns FALSE.
+ */
+export function isFantomas(platformRole: PlatformRole): boolean {
+  return platformRole === 'ghost';
 }
 
 /**

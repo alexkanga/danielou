@@ -44,7 +44,11 @@
 
 **NEXT FUNCTIONAL MODULE**: WS-002-M4 — Annual Results & Decision
 
-**M4 STATUS**: READY FOR OWNER GO / NOT STARTED
+**M4 STATUS**: IN PROGRESS — Annual calculation, persistence, decision recording, and SUPER_ADMIN council decision cancellation implemented. 242 M4 tests passing.
+
+**M4 DECISION CANCELLATION**: IMPLEMENTED — SUPER_ADMIN/Fantomas can cancel council decisions via DELETE /api/annual-results/decision. Atomic transaction (decision clear + audit). 46 cancellation-specific tests (CAN-AUTH, CAN-VAL, CAN-PERS, CAN-ATM, CAN-MATH, CAN-UI, CAN-FAN, HSA, FAN-AUD).
+
+**M4 hasSuperAdminCapabilities**: IMPLEMENTED — authorization.ts exports hasSuperAdminCapabilities(), requireSuperAdminCapability(), isFantomas(). Fantomas inherits all SUPER_ADMIN capabilities.
 
 **WS-002 CONTRACT**: APPROVED
 

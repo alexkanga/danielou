@@ -70,6 +70,7 @@ Session resolution order: Ghost cookie → Better Auth session → null (redirec
 - **Permission matrix**: `SCHOOL_ROLE_PERMISSIONS` (read-only Set per role). Ghost and super_admin bypass all checks.
 - **Teacher scope**: Resource-level check via `teacher_assignment` table.
 - **Server guards**: `requireAuthorizedSession()`, `requireAssessmentScope()` in `server-guards.ts`.
+- **SUPER_ADMIN capability**: `hasSuperAdminCapabilities()` returns true for `super_admin` and `ghost`. `requireSuperAdminCapability()` enforces this. `isFantomas()` narrows to ghost-only. Fantomas inherits all SUPER_ADMIN capabilities (AISE invariant).
 - **V1 compatibility**: V1 role on `user.role` used as fallback. `school_membership` table exists but is not queried in session resolution (deferred technical item).
 
 ## 7. Server/Data Access
@@ -107,7 +108,7 @@ Session resolution order: Ghost cookie → Better Auth session → null (redirec
 | Types | Unit and integration (no UI/E2E tests) |
 | Families | auth (14 files), m4/grades (5), m5/calculations (3), m6/dashboard (1), import (1) |
 | Quality commands | `pnpm test`, `pnpm test:unit`, `pnpm test:watch` |
-| Total | 24 files, 474 passed, 3 skipped |
+| Total | 40 files, 540+ passed (242 M4 tests including 46 cancellation tests) |
 
 ## 11. CI/CD
 
