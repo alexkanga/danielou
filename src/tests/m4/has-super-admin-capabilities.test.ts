@@ -19,7 +19,6 @@ import {
 import type { PlatformRole } from '@/lib/types/rbac';
 
 describe('hasSuperAdminCapabilities (HSA-01..02)', () => {
-  const allRoles: PlatformRole[] = ['super_admin', 'ghost', 'none'];
   const privilegedRoles: PlatformRole[] = ['super_admin', 'ghost'];
   const ordinaryRoles: PlatformRole[] = ['none'];
 

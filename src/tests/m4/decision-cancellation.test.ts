@@ -10,7 +10,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { hasSuperAdminCapabilities, requireSuperAdminCapability, isFantomas, AuthorizationError } from '@/lib/authorization';
+import { hasSuperAdminCapabilities, requireSuperAdminCapability, AuthorizationError } from '@/lib/authorization';
 import type { PlatformRole } from '@/lib/types/rbac';
 
 // ──── Source files ────
@@ -27,11 +27,6 @@ const route = readFileSync(
 
 const page = readFileSync(
   resolve(__dirname, '../../app/(dashboard)/dashboard/resultats/annuelles/page.tsx'),
-  'utf-8',
-);
-
-const authorization = readFileSync(
-  resolve(__dirname, '../../lib/authorization.ts'),
   'utf-8',
 );
 
@@ -319,7 +314,9 @@ describe('Cancellation UI (CAN-UI-01..06)', () => {
     // Cancel dialog must have a textarea for the cancel reason
     expect(page).toContain('cancel-reason');
     // Must have a required indicator (text-destructive * span)
-    expect(page).toContain("Motif de l'annulation");
+    // The label includes the cancel reason prompt
+    expect(page).toContain('Motif de l');
+    expect(page).toContain('annulation');
     // The required asterisk
     expect(page).toContain('<span className="text-destructive">*</span>');
   });

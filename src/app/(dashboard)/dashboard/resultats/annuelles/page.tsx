@@ -667,7 +667,7 @@ export default function AnnualResultsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="cancel-reason">Motif de l'annulation <span className="text-destructive">*</span></Label>
+                <Label htmlFor="cancel-reason">Motif de l&apos;annulation <span className="text-destructive">*</span></Label>
                 <Textarea
                   id="cancel-reason"
                   placeholder="Raison de l'annulation…"

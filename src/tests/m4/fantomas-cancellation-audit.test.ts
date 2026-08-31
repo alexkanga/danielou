@@ -10,7 +10,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { hasSuperAdminCapabilities, requireSuperAdminCapability, isFantomas, AuthorizationError } from '@/lib/authorization';
+import { requireSuperAdminCapability, isFantomas, AuthorizationError } from '@/lib/authorization';
 
 const authorization = readFileSync(
   resolve(__dirname, '../../lib/authorization.ts'),
