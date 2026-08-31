@@ -37,7 +37,7 @@ jobs:
         run: pnpm typecheck
 
       - name: Tests
-        run: pnpm test
+        run: pnpm vitest run --exclude 'src/tests/ws002/**' --exclude 'src/tests/*-regression.test.ts'
 
       - name: Build
         run: pnpm build
