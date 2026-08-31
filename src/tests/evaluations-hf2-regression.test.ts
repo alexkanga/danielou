@@ -24,6 +24,7 @@ describe('HF2 — evaluations listAssessments regression', () => {
   let schoolId: string;
   let levelId: string;
   let yearId: string;
+  let periodId: string;
   let classroomIds: string[];
   let subjectId: string;
   let assessmentTypeId: string;
@@ -35,6 +36,7 @@ describe('HF2 — evaluations listAssessments regression', () => {
     schoolId = randomUUID();
     levelId = randomUUID();
     yearId = randomUUID();
+    periodId = randomUUID();
     classroomIds = [randomUUID(), randomUUID(), randomUUID()];
     subjectId = randomUUID();
     assessmentTypeId = randomUUID();
@@ -43,6 +45,7 @@ describe('HF2 — evaluations listAssessments regression', () => {
     await sql`INSERT INTO school (id, name, created_at, updated_at) VALUES (${schoolId}, 'HF2 Test School', now(), now())`;
     await sql`INSERT INTO level (id, school_id, name, sort_order, created_at, updated_at) VALUES (${levelId}, ${schoolId}, 'HF2 Level', 1, now(), now())`;
     await sql`INSERT INTO academic_year (id, school_id, name, start_date, end_date, status, created_at, updated_at) VALUES (${yearId}, ${schoolId}, 'HF2 Year', '2025-09-01', '2026-06-30', 'active', now(), now())`;
+    await sql`INSERT INTO academic_period (id, academic_year_id, name, period_type, sort_order, status, created_at, updated_at) VALUES (${periodId}, ${yearId}, 'HF2 Trim', 'trimester', 1, 'open', now(), now())`;
 
     for (let i = 0; i < classroomIds.length; i++) {
       await sql`INSERT INTO classroom (id, level_id, academic_year_id, name, created_at, updated_at) VALUES (${classroomIds[i]}, ${levelId}, ${yearId}, ${'HF2-C' + i}, now(), now())`;
@@ -55,7 +58,7 @@ describe('HF2 — evaluations listAssessments regression', () => {
     assessmentIds = [];
     for (const cid of classroomIds) {
       const aId = randomUUID();
-      await sql`INSERT INTO assessment (id, classroom_id, subject_id, academic_period_id, assessment_type_id, title, scale, coefficient, status, assessment_date, created_at, updated_at) VALUES (${aId}, ${cid}, ${subjectId}, ${yearId}, ${assessmentTypeId}, 'HF2A', 20, '1', 'open', '2025-11-01', now(), now())`;
+      await sql`INSERT INTO assessment (id, classroom_id, subject_id, academic_period_id, assessment_type_id, title, scale, coefficient, status, assessment_date, created_at, updated_at) VALUES (${aId}, ${cid}, ${subjectId}, ${periodId}, ${assessmentTypeId}, 'HF2A', 20, '1', 'open', '2025-11-01', now(), now())`;
       assessmentIds.push(aId);
     }
   }, 30_000);
@@ -71,6 +74,7 @@ describe('HF2 — evaluations listAssessments regression', () => {
     }
     await sql`DELETE FROM assessment_type WHERE id = ${assessmentTypeId}`;
     await sql`DELETE FROM subject WHERE id = ${subjectId}`;
+    await sql`DELETE FROM academic_period WHERE id = ${periodId}`;
     await sql`DELETE FROM academic_year WHERE id = ${yearId}`;
     await sql`DELETE FROM level WHERE id = ${levelId}`;
     await sql`DELETE FROM school WHERE id = ${schoolId}`;
