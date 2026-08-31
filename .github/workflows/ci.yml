@@ -80,10 +80,27 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run database migrations
+      - name: Apply database schema
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/danielou_ci
-        run: pnpm db:migrate
+        run: node -e "
+          const { Client } = require('pg');
+          const fs = require('fs');
+          const path = require('path');
+          (async () => {
+            const client = new Client({ connectionString: process.env.DATABASE_URL });
+            await client.connect();
+            const dir = 'drizzle';
+            const files = fs.readdirSync(dir).filter(f => f.endsWith('.sql')).sort();
+            for (const f of files) {
+              const sql = fs.readFileSync(path.join(dir, f), 'utf8');
+              await client.query(sql);
+              console.log('Applied: ' + f);
+            }
+            await client.end();
+            console.log('All migrations applied (' + files.length + ' files)');
+          })().catch(e => { console.error(e.message); process.exit(1); });
+        "
 
       - name: DB integration tests
         env:
