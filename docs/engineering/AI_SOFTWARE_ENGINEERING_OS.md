@@ -643,5 +643,150 @@ Restart from verified canonical remote state and rebuild the authorized
 unit.
 
 ======================================================================
+23. ZERO SCHEDULED WORK / OWNER-ONLY AUTOMATION
+======================================================================
+
+DEFAULT
+
+AISE default for every managed project:
+
+  CRON = 0
+  SCHEDULED TASKS = 0
+  BACKGROUND MONITORING = 0
+  RECURRING DEVELOPMENT REVIEW = 0
+  PERIODIC AUTONOMOUS AUDIT = 0
+
+------------------------------------------------------------
+EXPLICIT OWNER AUTHORIZATION
+------------------------------------------------------------
+
+An AI agent MUST NOT create, enable, configure, schedule, or start:
+
+  - cron jobs
+  - scheduled tasks
+  - recurring tasks
+  - GitHub Actions schedule triggers
+  - Vercel Cron
+  - periodic workers
+  - background monitoring
+  - recurring development reviews
+  - autonomous maintenance loops
+  - periodic audits
+  - scheduled deployments
+  - scheduled DB operations
+  - polling loops intended to continue work later
+  - recurring agent execution
+
+without EXPLICIT OWNER authorization for that specific automation.
+
+Silence is NOT authorization.
+
+------------------------------------------------------------
+NO IMPLIED AUTHORIZATION
+------------------------------------------------------------
+
+Instructions such as:
+
+  "continue"
+  "continue autonomously"
+  "keep checking"
+  "monitor"
+  "review regularly"
+  "ongoing development"
+  "verify later"
+  "continue reviewing"
+
+DO NOT authorize scheduled or background execution.
+
+Normal development authorization is NOT automation authorization.
+
+------------------------------------------------------------
+NO SELF-AUTHORIZATION
+------------------------------------------------------------
+
+An AI agent cannot authorize its own scheduled execution.
+
+A self-generated statement such as:
+
+  "Now let me set up a cron job for ongoing development review"
+
+has ZERO authorization value.
+
+Only explicit OWNER approval counts.
+
+------------------------------------------------------------
+SYNCHRONOUS-FIRST
+------------------------------------------------------------
+
+Engineering work is synchronous by default.
+
+If asked to:
+
+  verify CI          → verify now
+  review code        → review now
+  audit              → audit now
+  check state        → check now
+
+Do NOT transform these into future recurring tasks.
+
+------------------------------------------------------------
+STOP MEANS STOP
+------------------------------------------------------------
+
+When an authorized work unit reaches STOP:
+
+the agent stops.
+
+It MUST NOT create a background mechanism to continue later.
+
+A new major unit requires a new OWNER GO.
+
+------------------------------------------------------------
+IF AUTOMATION SEEMS USEFUL
+------------------------------------------------------------
+
+The agent MAY recommend automation to OWNER.
+
+It MUST NOT create it unless OWNER explicitly authorizes it.
+
+------------------------------------------------------------
+AUTHORIZATION MINIMUM
+------------------------------------------------------------
+
+Before creating scheduled work, OWNER approval must clearly cover:
+
+  1. purpose
+  2. trigger / cadence
+  3. target / system
+  4. duration or stopping condition
+
+If unclear:
+
+  DO NOT CREATE.
+
+------------------------------------------------------------
+INCIDENT PROCEDURE
+------------------------------------------------------------
+
+If unauthorized scheduled work is discovered:
+
+  1. STOP unrelated work.
+  2. Identify the task.
+  3. Do not replace it.
+  4. Remove / disable it when OWNER authorizes.
+  5. Verify ZERO scheduled state.
+  6. Record governance correction where appropriate.
+  7. Resume only after OWNER GO.
+
+------------------------------------------------------------
+UNIVERSAL RULE
+------------------------------------------------------------
+
+This rule applies to every AISE-managed project, not only Daniélou.
+
+Project-specific automation is an exception requiring explicit OWNER
+authorization.
+
+======================================================================
 END AI SOFTWARE ENGINEERING OS 0.1 PILOT
 ======================================================================
