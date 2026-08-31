@@ -44,9 +44,11 @@
 
 **NEXT FUNCTIONAL MODULE**: WS-002-M4 — Annual Results & Decision
 
-**M4 STATUS**: IN PROGRESS — Annual calculation, persistence, decision recording, SUPER_ADMIN council decision cancellation, and search/filter/sort UX implemented. 282 M4 tests passing.
+**M4 STATUS**: IN PROGRESS — Annual calculation, persistence, decision recording, SUPER_ADMIN council decision cancellation, and search/filter/sort UX implemented. 290 M4 tests passing.
 
-**M4 ANNUAL RESULTS UX**: IMPLEMENTED / OWNER RUNTIME VALIDATION PENDING — Search, Statut provisoire filter, Décision du conseil filter, sort (rank/average/name), reset, empty state, result count. View-only, never alters authoritative data.
+**M4 ANNUAL RESULTS UX**: CLOSED / PASS — Search, Statut provisoire filter, Décision du conseil filter, sort (rank/average/name), reset, empty state, result count. View-only, never alters authoritative data. OWNER RUNTIME VALIDATED.
+
+**GITHUB CI**: PASS — All PR #6 checks green (Quality Gates, Preview Deployment, Vercel Preview Comments).
 
 **M4 DECISION CANCELLATION**: IMPLEMENTED — SUPER_ADMIN/Fantomas can cancel council decisions via DELETE /api/annual-results/decision. Atomic transaction (decision clear + audit). 46 cancellation-specific tests (CAN-AUTH, CAN-VAL, CAN-PERS, CAN-ATM, CAN-MATH, CAN-UI, CAN-FAN, HSA, FAN-AUD).
 
