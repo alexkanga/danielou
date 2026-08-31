@@ -8,12 +8,12 @@
 // @vitest-environment node
 
 import { describe, it, expect, afterAll, beforeAll } from 'vitest';
-import { neon } from '@neondatabase/serverless';
 import { randomUUID } from 'crypto';
+import { createSqlClient } from '@/tests/helpers/sql-client';
 import { getCompositionClassResults, InvalidPeriodTypeError } from '@/lib/services/results/composition-data.service';
 import { NotFoundError } from '@/lib/services/pedagogy/errors';
 
-const sql = neon(process.env.DATABASE_URL!);
+const sql = createSqlClient(process.env.DATABASE_URL!);
 
 interface TestContext {
   schoolId: string;
