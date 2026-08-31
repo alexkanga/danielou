@@ -92,4 +92,8 @@
 
 **DEFERRED M4 BINDING**: Promotion threshold/configuration must be frozen before M4 implementation.
 
-**DEFERRED**: See WS-003 in ROADMAP.md
+**WS-003 PERIOD RESULTS CONTRACT**: FROZEN / IMPLEMENTATION PENDING
+
+**WS-003 CONTRACT FILE**: docs/planning/WS-003_PERIOD_RESULTS_CONTRACT.md
+
+**DEFERRED**: See ROADMAP.md for items beyond WS-003
