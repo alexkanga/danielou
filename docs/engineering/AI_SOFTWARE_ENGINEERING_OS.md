@@ -601,5 +601,47 @@ DESIGN ENOUGH
 → CONTINUE AFTER OWNER GO.
 
 ======================================================================
+21. FANTOMAS PRIVILEGE INHERITANCE
+======================================================================
+
+Fantomas / Ghost is the highest-privileged system principal.
+
+  FANTOMAS
+  = ALL SUPER_ADMIN CAPABILITIES
+  + FANTOMAS-SPECIFIC CAPABILITIES
+
+Every SUPER_ADMIN-authorized operation must also be authorized to
+Fantomas.
+
+SUPER_ADMIN does not automatically inherit Fantomas-only capabilities.
+
+Authorization architecture distinguishes:
+
+  effective SUPER_ADMIN capabilities
+
+from:
+
+  Fantomas identity.
+
+In Daniélou, this is implemented via:
+
+  hasSuperAdminCapabilities(platformRole): true for super_admin | ghost
+  requireSuperAdminCapability(platformRole): throws FORBIDDEN otherwise
+  isFantomas(platformRole): true only for ghost
+
+======================================================================
+22. CANONICAL REMOTE RESTART RULE
+======================================================================
+
+Unpushed local work is non-canonical.
+
+When continuity of local work is uncertain:
+
+do not perform Git archaeology or local-work recovery by default.
+
+Restart from verified canonical remote state and rebuild the authorized
+unit.
+
+======================================================================
 END AI SOFTWARE ENGINEERING OS 0.1 PILOT
 ======================================================================
