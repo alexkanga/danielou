@@ -9,8 +9,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Award, RefreshCw, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { Award, RefreshCw, AlertTriangle, CheckCircle, XCircle, Search, RotateCcw } from 'lucide-react';
 import { deriveRecommendation } from '@/lib/services/results/recommendation-engine';
 import { useNavigation } from '@/components/providers/navigation-provider';
 
@@ -220,6 +222,95 @@ export default function AnnualResultsPage() {
   const [cancelLoading, setCancelLoading] = useState(false);
   const canCancel = cancelReason.trim().length > 0;
 
+  // Search / Filter / Sort state (presentation only — never alters authoritative data)
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [decisionFilter, setDecisionFilter] = useState('');
+  const [sortKey, setSortKey] = useState('');
+
+  // Derived rows: authoritative data → search → status filter → decision filter → sort
+  const visibleRows = useMemo(() => {
+    if (!data) return [];
+    let filtered = data.students;
+
+    // Search: case-insensitive, accent-insensitive, partial match
+    if (search.trim()) {
+      const q = search.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      filtered = filtered.filter(s => {
+        const name = `${s.studentLastName} ${s.studentFirstName}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return name.includes(q);
+      });
+    }
+
+    // Statut provisoire filter
+    if (statusFilter) {
+      filtered = filtered.filter(s => {
+        const rec = getRecommendation(s.annual.status, s.annual.annualOfficial, threshold);
+        return rec === statusFilter;
+      });
+    }
+
+    // Décision du conseil filter
+    if (decisionFilter) {
+      if (decisionFilter === '__pending__') {
+        filtered = filtered.filter(s => !s.persistedFinalDecision);
+      } else {
+        filtered = filtered.filter(s => s.persistedFinalDecision === decisionFilter);
+      }
+    }
+
+    // Sort (applied AFTER filtering, never recomputes rank or class average)
+    if (sortKey) {
+      filtered = [...filtered].sort((a, b) => {
+        switch (sortKey) {
+          case 'rank-asc': {
+            if (a.annualRank == null && b.annualRank == null) return a.studentLastName.localeCompare(b.studentLastName, 'fr');
+            if (a.annualRank == null) return 1; // null rows after numeric
+            if (b.annualRank == null) return -1;
+            return a.annualRank.rank - b.annualRank.rank || a.studentLastName.localeCompare(b.studentLastName, 'fr');
+          }
+          case 'rank-desc': {
+            if (a.annualRank == null && b.annualRank == null) return a.studentLastName.localeCompare(b.studentLastName, 'fr');
+            if (a.annualRank == null) return 1;
+            if (b.annualRank == null) return -1;
+            return b.annualRank.rank - a.annualRank.rank || a.studentLastName.localeCompare(b.studentLastName, 'fr');
+          }
+          case 'avg-desc': {
+            const aa = a.annual.annualOfficial ? parseFloat(a.annual.annualOfficial) : null;
+            const ab = b.annual.annualOfficial ? parseFloat(b.annual.annualOfficial) : null;
+            if (aa != null && ab != null) return ab - aa;
+            if (aa != null) return -1; // null rows after numeric
+            if (ab != null) return 1;
+            return a.studentLastName.localeCompare(b.studentLastName, 'fr');
+          }
+          case 'avg-asc': {
+            const aa = a.annual.annualOfficial ? parseFloat(a.annual.annualOfficial) : null;
+            const ab = b.annual.annualOfficial ? parseFloat(b.annual.annualOfficial) : null;
+            if (aa != null && ab != null) return aa - ab;
+            if (aa != null) return -1;
+            if (ab != null) return 1;
+            return a.studentLastName.localeCompare(b.studentLastName, 'fr');
+          }
+          case 'name-asc':
+            return a.studentLastName.localeCompare(b.studentLastName, 'fr') || a.studentFirstName.localeCompare(b.studentFirstName, 'fr');
+          case 'name-desc':
+            return b.studentLastName.localeCompare(a.studentLastName, 'fr') || b.studentFirstName.localeCompare(a.studentFirstName, 'fr');
+          default: return 0;
+        }
+      });
+    }
+
+    return filtered;
+  }, [data, search, statusFilter, decisionFilter, sortKey, threshold]);
+
+  const hasFilters = search !== '' || statusFilter !== '' || decisionFilter !== '' || sortKey !== '';
+  const handleReset = useCallback(() => {
+    setSearch('');
+    setStatusFilter('');
+    setDecisionFilter('');
+    setSortKey('');
+  }, []);
+
   // Get super admin capability from navigation context
   const { hasSuperAdminCapabilities } = useNavigation();
 
@@ -390,6 +481,57 @@ export default function AnnualResultsPage() {
             </p>
           )}
 
+          {/* Search / Filter / Sort toolbar */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative min-w-[180px] flex-1 sm:flex-none">
+              <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              <Input placeholder="Rechercher un élève..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8 h-9" />
+            </div>
+            <Select value={statusFilter || undefined} onValueChange={(v) => setStatusFilter(v === '__all__' ? '' : v)}>
+              <SelectTrigger size="sm" className="w-[160px]">
+                <SelectValue placeholder="Statut provisoire" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Tous</SelectItem>
+                <SelectItem value="PROPOSED_ADMITTED">Admissibilité</SelectItem>
+                <SelectItem value="PROPOSED_REPEAT">Redoublement</SelectItem>
+                <SelectItem value="DECISION_COUNCIL">Conseil requis</SelectItem>
+                <SelectItem value="INCOMPLETE">Dossier incomplet</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={decisionFilter || undefined} onValueChange={(v) => setDecisionFilter(v === '__all__' ? '' : v)}>
+              <SelectTrigger size="sm" className="w-[170px]">
+                <SelectValue placeholder="Décision du conseil" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Toutes</SelectItem>
+                <SelectItem value="admitted">Admis</SelectItem>
+                <SelectItem value="repeat">Redouble</SelectItem>
+                <SelectItem value="admitted_by_derogation">Admis sur dérogation</SelectItem>
+                <SelectItem value="__pending__">En attente</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={sortKey || undefined} onValueChange={setSortKey}>
+              <SelectTrigger size="sm" className="w-[180px]">
+                <SelectValue placeholder="Trier par" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="rank-asc">Rang croissant</SelectItem>
+                <SelectItem value="rank-desc">Rang décroissant</SelectItem>
+                <SelectItem value="avg-desc">Moyenne décroissante</SelectItem>
+                <SelectItem value="avg-asc">Moyenne croissante</SelectItem>
+                <SelectItem value="name-asc">Nom A → Z</SelectItem>
+                <SelectItem value="name-desc">Nom Z → A</SelectItem>
+              </SelectContent>
+            </Select>
+            {hasFilters && (
+              <Button variant="ghost" size="sm" onClick={handleReset} className="h-9">
+                <RotateCcw className="mr-1 h-3.5 w-3.5" />
+                Réinitialiser
+              </Button>
+            )}
+          </div>
+
           {/* Data table */}
           <div className="rounded-lg border">
             <div className="overflow-x-auto">
@@ -413,6 +555,13 @@ export default function AnnualResultsPage() {
                   </tr>
                 </thead>
                 <tbody>
+                  {visibleRows.length === 0 && data.students.length > 0 && (
+                    <tr>
+                      <td colSpan={5 + compositionPeriods.length + (passagePeriod ? 1 : 0)} className="px-4 py-8 text-center text-muted-foreground">
+                        Aucun élève ne correspond aux critères.
+                      </td>
+                    </tr>
+                  )}
                   {data.students.length === 0 && (
                     <tr>
                       <td colSpan={5 + compositionPeriods.length + (passagePeriod ? 1 : 0)} className="px-4 py-8 text-center text-muted-foreground">
@@ -420,7 +569,7 @@ export default function AnnualResultsPage() {
                       </td>
                     </tr>
                   )}
-                  {data.students.map(s => {
+                  {visibleRows.map(s => {
                     const pMap = studentPeriodMap.get(s.studentId);
                     const isCalc = s.annual.status === 'CALCULATED';
                     const rec = getRecommendation(s.annual.status, s.annual.annualOfficial, threshold);
@@ -572,7 +721,11 @@ export default function AnnualResultsPage() {
           </div>
 
           <p className="text-xs text-muted-foreground text-right">
-            {data.students.length} élève{data.students.length !== 1 ? 's' : ''}
+            {hasFilters ? (
+              <span>{visibleRows.length} élève{visibleRows.length !== 1 ? 's' : ''} affiché{visibleRows.length !== 1 ? 's' : ''} sur {data.students.length}</span>
+            ) : (
+              <span>{data.students.length} élève{data.students.length !== 1 ? 's' : ''}</span>
+            )}
             {data.classAverage.studentCount > 0 && (
               <span> · {data.classAverage.studentCount} calculé{data.classAverage.studentCount !== 1 ? 's' : ''}</span>
             )}
