@@ -44,8 +44,8 @@ describe('HF2 — evaluations listAssessments regression', () => {
     await sql`INSERT INTO level (id, school_id, name, sort_order, created_at, updated_at) VALUES (${levelId}, ${schoolId}, 'HF2 Level', 1, now(), now())`;
     await sql`INSERT INTO academic_year (id, school_id, name, start_date, end_date, status, created_at, updated_at) VALUES (${yearId}, ${schoolId}, 'HF2 Year', '2025-09-01', '2026-06-30', 'active', now(), now())`;
 
-    for (const cid of classroomIds) {
-      await sql`INSERT INTO classroom (id, level_id, academic_year_id, name, created_at, updated_at) VALUES (${cid}, ${levelId}, ${yearId}, 'HF2-C', now(), now())`;
+    for (let i = 0; i < classroomIds.length; i++) {
+      await sql`INSERT INTO classroom (id, level_id, academic_year_id, name, created_at, updated_at) VALUES (${classroomIds[i]}, ${levelId}, ${yearId}, ${'HF2-C' + i}, now(), now())`;
     }
 
     await sql`INSERT INTO subject (id, school_id, code, name, is_active, created_at, updated_at) VALUES (${subjectId}, ${schoolId}, 'HF2', 'HF2 Subject', true, now(), now())`;
