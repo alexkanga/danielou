@@ -310,6 +310,8 @@ async function computeStudentPeriodResults(
           const aResult = calculateAssessmentResult(gradeInputs, asAgg(cc.assessmentAggregation), cc.componentScale);
           aResult.assessmentId = a.id;
           aResult.configComponentId = cc.id;
+          // WS-003 §7: required assessment with NO grade row → INCOMPLETE
+          if (gradeInputs.length === 0) aResult.isIncomplete = true;
           assessmentResults.push(aResult);
         }
 
@@ -355,6 +357,8 @@ async function computeStudentPeriodResults(
 
         const aResult = calculateAssessmentResult(gradeInputs, asAgg(subjectAssessAgg), subjectScale);
         aResult.assessmentId = a.id;
+        // WS-003 §7: required assessment with NO grade row → INCOMPLETE
+        if (gradeInputs.length === 0) aResult.isIncomplete = true;
         assessmentResults.push(aResult);
       }
 
