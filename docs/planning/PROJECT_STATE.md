@@ -92,8 +92,26 @@
 
 **DEFERRED M4 BINDING**: Promotion threshold/configuration must be frozen before M4 implementation.
 
-**WS-003 PERIOD RESULTS CONTRACT**: FROZEN / IMPLEMENTATION PENDING
+**WS-003 CONTRACT**: FROZEN
 
 **WS-003 CONTRACT FILE**: docs/planning/WS-003_PERIOD_RESULTS_CONTRACT.md
+
+**WS-003 P0**: IMPLEMENTED / OWNER RUNTIME VALIDATION PENDING
+
+**WS-003 P0 PR**: #7 (feat/ws003-period-results-p0 → main)
+
+**WS-003 P0 COMMIT**: 998919693de2032d1cef97b862a3d82e29d8ea55
+
+**WS-003 P0 CI**: ALL PASS
+- Quality Gates — SUCCESS
+- PostgreSQL Integration — SUCCESS
+- Preview Deployment — SUCCESS
+- Vercel Preview Comments — SUCCESS
+
+**WS-003 P1**: NOT STARTED
+
+**WS-003 P2**: NOT STARTED
+
+**WS-003 M5**: NOT STARTED
 
 **DEFERRED**: See ROADMAP.md for items beyond WS-003
