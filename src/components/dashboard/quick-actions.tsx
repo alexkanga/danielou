@@ -20,7 +20,7 @@ const ACTIONS: QuickAction[] = [
   { label: 'Inscription', href: '/dashboard/inscriptions', icon: UserPlus, allowedRoles: ['admin'] },
   { label: 'Évaluation', href: '/dashboard/evaluations', icon: FileText, allowedRoles: ['admin', 'direction', 'teacher'] },
   { label: 'Saisir notes', href: '/dashboard/saisie-notes', icon: PenTool, allowedRoles: ['admin', 'teacher'] },
-  { label: 'Résultats', href: '/dashboard/resultats', icon: BarChart3, allowedRoles: ['admin', 'direction', 'teacher', 'reader'] },
+  { label: 'Résultats par période', href: '/dashboard/resultats', icon: BarChart3, allowedRoles: ['admin', 'direction', 'teacher', 'reader'] },
   { label: 'Préparer bulletins', href: '/dashboard/bulletins/preparation', icon: ScrollText, allowedRoles: ['admin', 'teacher'] },
   { label: 'Valider bulletins', href: '/dashboard/bulletins/validation', icon: ClipboardCheck, allowedRoles: ['admin', 'direction'] },
   { label: 'Statistiques', href: '/dashboard/statistiques', icon: BarChart3, allowedRoles: ['admin', 'direction', 'reader'] },

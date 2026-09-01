@@ -62,9 +62,10 @@ describe('M6.1 Dashboard RBAC', () => {
   });
 
   describe('Quick actions role filtering', () => {
-    const adminActions = ['Élève', 'Inscription', 'Évaluation', 'Saisir notes', 'Résultats', 'Préparer bulletins', 'Valider bulletins', 'Statistiques'];
-    const teacherActions = ['Évaluation', 'Saisir notes', 'Résultats', 'Préparer bulletins'];
-    const readerActions = ['Résultats', 'Statistiques'];
+    // WS-003 P2: label renamed to 'Résultats par période'
+    const adminActions = ['Élève', 'Inscription', 'Évaluation', 'Saisir notes', 'Résultats par période', 'Préparer bulletins', 'Valider bulletins', 'Statistiques'];
+    const teacherActions = ['Évaluation', 'Saisir notes', 'Résultats par période', 'Préparer bulletins'];
+    const readerActions = ['Résultats par période', 'Statistiques'];
 
     it('admin should see all quick actions', () => {
       expect(adminActions.length).toBeGreaterThanOrEqual(8);

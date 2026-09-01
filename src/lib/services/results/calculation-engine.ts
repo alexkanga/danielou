@@ -69,15 +69,32 @@ function isZero(value: string | null | undefined): boolean {
 }
 
 /**
- * Filter grades to only those that CONTRIBUTE (status = 'graded' with non-null rawValue).
- * ABSENCE != ZERO — non-graded statuses are excluded entirely.
+ * Filter grades to only those that CONTRIBUTE to the average.
+ *
+ * WS-003 Contract §7 (FROZEN):
+ *   graded          → included with recorded rawValue
+ *   absent_unexcused→ included as penalizing zero (rawValue='0')
+ *   absent_excused  → excluded (neutral)
+ *   exempt          → excluded (neutral)
+ *   not_evaluated   → excluded (neutral)
+ *   pending         → excluded, marks result as incomplete
  */
 function filterContributingGrades(grades: GradeInput[]): GradeInput[] {
-  return grades.filter(g => {
-    if (GRADE_STATUS_BEHAVIOR[g.status] !== 'CONTRIBUTES') return false;
-    if (g.rawValue === null) return false;
-    return true;
-  });
+  return grades
+    .map(g => {
+      const behavior = GRADE_STATUS_BEHAVIOR[g.status];
+      if (behavior === 'PENALIZING_ZERO') {
+        // AI: earned=0, full max retained. Inject zero as the rawValue.
+        return { ...g, rawValue: '0' };
+      }
+      return g;
+    })
+    .filter(g => {
+      const behavior = GRADE_STATUS_BEHAVIOR[g.status];
+      if (behavior !== 'CONTRIBUTES' && behavior !== 'PENALIZING_ZERO') return false;
+      if (g.rawValue === null) return false;
+      return true;
+    });
 }
 
 function hasIncompleteStatus(grades: GradeInput[]): boolean {

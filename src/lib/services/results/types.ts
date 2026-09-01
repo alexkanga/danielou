@@ -26,18 +26,26 @@ export type GradeStatus =
 
 /** How a grade status participates in calculation */
 export type GradeStatusBehavior =
-  | 'CONTRIBUTES'   // Included in average calculation
-  | 'EXCLUDED'      // Excluded from average, does not affect denominator
-  | 'INCOMPLETE';   // Excluded, but marks the result as incomplete
+  | 'CONTRIBUTES'      // Included in average calculation with recorded value
+  | 'PENALIZING_ZERO'  // Included as earned=0, full max retained (absent unexcused)
+  | 'EXCLUDED'         // Excluded from average, does not affect denominator
+  | 'INCOMPLETE';      // Excluded, but marks the result as incomplete
 
 /**
  * Status → behavior mapping.
- * ABSENCE != ZERO. Only 'graded' contributes a numeric value.
+ *
+ * WS-003 Contract §7 (FROZEN):
+ *   graded          → CONTRIBUTES (recorded score)
+ *   absent_unexcused→ PENALIZING_ZERO (earned=0, full max retained)
+ *   absent_excused  → EXCLUDED (neutral)
+ *   exempt          → EXCLUDED (neutral)
+ *   not_evaluated   → EXCLUDED (neutral)
+ *   pending         → INCOMPLETE
  */
 export const GRADE_STATUS_BEHAVIOR: Record<GradeStatus, GradeStatusBehavior> = {
   graded: 'CONTRIBUTES',
   absent_excused: 'EXCLUDED',
-  absent_unexcused: 'EXCLUDED',
+  absent_unexcused: 'PENALIZING_ZERO',
   exempt: 'EXCLUDED',
   not_evaluated: 'EXCLUDED',
   pending: 'INCOMPLETE',

@@ -116,7 +116,7 @@ export const NAV_SECTIONS: NavSection[] = [
         requiredPermissions: ['school:grades:manage'],
       },
       {
-        label: 'Résultats',
+        label: 'Résultats par période',
         href: '/dashboard/resultats',
         icon: 'BarChart3',
         requiredPermissions: ['school:grades:read'],
@@ -326,7 +326,7 @@ export const BREADCRUMB_MAP: Array<{
     prefix: '/dashboard/resultats',
     items: [
       { href: '/dashboard', label: 'Accueil', requiredPermissions: [] },
-      { href: '/dashboard/resultats', label: 'Résultats', requiredPermissions: ['school:grades:read'] },
+      { href: '/dashboard/resultats', label: 'Résultats par période', requiredPermissions: ['school:grades:read'] },
     ],
   },
   {
