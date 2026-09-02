@@ -399,7 +399,7 @@ NEXT:                       S5 — Product Requirements / Cahier des Charges
 ## 15. FORWARD REFERENCES
 
 - S5 — Product Requirements / Cahier des Charges
-  (see `docs/engineering/AISE_PRODUCT_REQUIREMENTS.md` when available)
+  (see `docs/engineering/AISE_PRODUCT_REQUIREMENTS.md`)
 - S6 — Technical Specification (not yet implemented)
 
 Routes whose detailed protocol does not yet exist as a standalone
