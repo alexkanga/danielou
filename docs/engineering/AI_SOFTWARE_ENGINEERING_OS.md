@@ -13,6 +13,7 @@ Operational implementation:
   S4 — AISE Project Discovery / Charter → docs/engineering/AISE_PROJECT_DISCOVERY_CHARTER.md
   S5 — AISE Product Requirements → docs/engineering/AISE_PRODUCT_REQUIREMENTS.md
   S6 — AISE Technical Specification → docs/engineering/AISE_TECHNICAL_SPECIFICATION.md
+  S7 — AISE Project Manifest + ADR → docs/engineering/AISE_PROJECT_MANIFEST_ADR.md
 
 Canonical component topology and lifecycle:
   AISE_ROADMAP → docs/engineering/AISE_ROADMAP.md
