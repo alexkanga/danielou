@@ -38,8 +38,8 @@ S2 must not route from chat memory alone.
 
 Owner intends to create a new software project/product from zero.
 No established project implementation workflow exists yet.
-Next component: S3 New Project Bootstrap Protocol (when available).
-Otherwise, use S0 normative flow.
+Next component: S3 New Project Bootstrap Protocol
+(`docs/engineering/AISE_NEW_PROJECT_BOOTSTRAP.md`).
 
 ### MODULE
 
