@@ -420,7 +420,8 @@ it into requirements, architecture, or code is premature execution.
 
 - S4 — Project Discovery / Charter
   (see `docs/engineering/AISE_PROJECT_DISCOVERY_CHARTER.md`)
-- S5 — Product Requirements (not yet implemented)
+- S5 — Product Requirements / Cahier des Charges
+  (see `docs/engineering/AISE_PRODUCT_REQUIREMENTS.md`)
 - S6 — Technical Specification (not yet implemented)
 
 Routes whose detailed protocol does not yet exist as a standalone

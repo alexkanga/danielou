@@ -229,8 +229,9 @@ Routes whose detailed protocol does not yet exist as a standalone
 component use the current S0 normative flow until a dedicated component
 is created.
 
-Known roadmap:
-- S3 — New Project Bootstrap Protocol (not yet implemented)
+Known roadmap (see AISE_ROADMAP for full topology):
+- S3 — New Project Bootstrap Protocol
+  (see `docs/engineering/AISE_NEW_PROJECT_BOOTSTRAP.md`)
 
 S2 does NOT invent S3+ contents prematurely.
 
