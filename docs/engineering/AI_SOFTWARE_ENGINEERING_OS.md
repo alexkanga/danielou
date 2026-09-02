@@ -4,6 +4,10 @@ AI SOFTWARE ENGINEERING OS
 Version: 0.1 PILOT
 Status: ACTIVE PILOT
 Pilot Project: Daniélou
+Frozen Rules: §24 CONTRACT PRESERVATION
+
+Operational implementation:
+  S1 — AISE Universal Launcher → docs/engineering/AISE_UNIVERSAL_LAUNCHER.md
 
 ======================================================================
 0. PURPOSE
@@ -93,6 +97,24 @@ INVESTIGATION
 MIGRATION
 RECOVERY
 RELEASE
+CONTRACT_DIVERGENCE
+
+CONTRACT_DIVERGENCE triggers when observed factual behavior
+does not match OWNER-approved intended behavior.
+
+Required before action:
+
+CLASSIFY
+  → IMPLEMENTATION DEFECT → HOTFIX
+  → TEST DEFECT → TEST CORRECTION
+  → FIXTURE/DATA DEFECT → DATA/FIXTURE CORRECTION
+  → ENVIRONMENT DEFECT → ENVIRONMENT RECOVERY
+  → SPECIFICATION AMBIGUITY → OWNER DECISION
+  → UNKNOWN → INVESTIGATION
+
+UNKNOWN → WORKAROUND is PROHIBITED.
+
+Do not create a workaround before the cause is classified.
 
 Do not turn a small defect into an architecture project.
 
@@ -786,6 +808,361 @@ This rule applies to every AISE-managed project, not only Daniélou.
 
 Project-specific automation is an exception requiring explicit OWNER
 authorization.
+
+======================================================================
+24. FROZEN CONTRACT PRESERVATION
+======================================================================
+
+FROZEN — OWNER-approved universal invariant.
+Agents may apply and refine implementation details around it
+but may not weaken or remove its semantic protections
+without explicit OWNER approval.
+
+------------------------------------------------------------
+24.1 CORE PRINCIPLE
+------------------------------------------------------------
+
+NEVER ADAPT VALID EVIDENCE TO A DEFECTIVE IMPLEMENTATION.
+
+When factual implementation behavior conflicts with an
+OWNER-approved contract, requirement, specification, ADR,
+invariant, or acceptance criterion:
+
+  the implementation is SUSPECT FIRST.
+
+The agent MUST NOT silently change the intended state
+to match current implementation behavior.
+
+  APPROVED INTENT → drives implementation.
+  CURRENT IMPLEMENTATION → does NOT redefine approved intent.
+
+------------------------------------------------------------
+24.2 TWO TRUTH PLANES (reinforcement)
+------------------------------------------------------------
+
+A. FACTUAL STATE
+
+What currently exists or happens: repository, code, schema,
+migrations, runtime, database, deployment, tests, observed outputs,
+actual query predicates, actual tool/environment state.
+
+B. INTENDED STATE
+
+What has been explicitly approved: product requirements,
+module contract, ADR, invariant, acceptance criterion,
+OWNER decision, frozen rule.
+
+When FACTUAL STATE ≠ INTENDED STATE:
+
+  STATUS: CONTRACT DIVERGENCE DETECTED
+
+Do NOT silently resolve the divergence.
+
+------------------------------------------------------------
+24.3 PROHIBITED COMPENSATING ADAPTATIONS
+------------------------------------------------------------
+The following are MUST NOT / PROHIBITED:
+
+- Changing expected test values to match a defect.
+- Weakening valid assertions.
+- Deleting a valid regression test.
+- Changing fixture data so the defect is no longer triggered.
+- Designing a seed around defective behavior.
+- Modifying mocks to hide a defect.
+- Modifying environment assumptions to fit bad results.
+- Changing unrelated configuration to make a test pass.
+- Bypassing canonical business logic.
+- Implementing a duplicate business calculator inside a
+  seed/test/SQL.
+- Disabling or weakening type checking.
+- Globally disabling lint rules to hide a defect.
+- Excluding broken code from compilation merely to obtain PASS,
+  without independent architectural justification.
+- Excluding directories/files from quality gates without
+  independent architectural justification.
+- Changing an OWNER-approved business rule without OWNER approval.
+
+------------------------------------------------------------
+24.4 DIVERGENCE CLASSIFICATION
+------------------------------------------------------------
+
+When observed behavior differs from approved expected behavior,
+the agent MUST classify the divergence BEFORE modifying evidence.
+
+Allowed classifications:
+
+  A. IMPLEMENTATION DEFECT
+  B. TEST DEFECT
+  C. FIXTURE / DATA DEFECT
+  D. ENVIRONMENT / INFRASTRUCTURE DEFECT
+  E. SPECIFICATION AMBIGUITY
+  F. UNKNOWN
+
+Until proven: CAUSE = UNKNOWN.
+
+  UNKNOWN → INVESTIGATE.
+  NEVER  UNKNOWN → WORKAROUND.
+
+------------------------------------------------------------
+24.5 IMPLEMENTATION DEFECT PROCEDURE
+------------------------------------------------------------
+
+When approved intended behavior is clear and implementation
+violates it:
+
+  STATUS: IMPLEMENTATION DEFECT CONFIRMED
+
+Required sequence:
+
+1. STOP adapting tests/fixtures/environment.
+2. Preserve the reproducing evidence.
+3. Identify the smallest proven root cause.
+4. Implement the minimum correct code change.
+5. Add or preserve regression tests.
+6. Run targeted tests.
+7. Run normal quality gates.
+8. Re-run the ORIGINAL reproduction unchanged.
+9. Verify factual behavior now matches intended behavior.
+
+The fixture/test that exposed the defect should normally
+remain valid.
+
+------------------------------------------------------------
+24.6 TEST DEFECT PROCEDURE
+------------------------------------------------------------
+
+A failing test is NOT evidence that the test is wrong.
+
+A test may be changed only when evidence proves:
+
+  TEST DEFECT CONFIRMED
+
+Examples: expectation contradicts approved contract;
+setup models an impossible state;
+assertion targets deprecated approved behavior.
+
+Never weaken a valid assertion merely to obtain PASS.
+
+------------------------------------------------------------
+24.7 FIXTURE / DATA DEFECT PROCEDURE
+------------------------------------------------------------
+
+Fixture/data modification is authorized only when:
+
+- implementation conforms to approved intent; AND
+- the fixture/data violates the canonical model or approved contract.
+
+  STATUS: FIXTURE DEFECT CONFIRMED
+
+Then: modify fixture-owned data only.
+Do not change unrelated application behavior.
+Do not modify unrelated production/reference data
+merely to make fixture validation easier.
+
+------------------------------------------------------------
+24.8 ENVIRONMENT TARGET VERIFICATION
+------------------------------------------------------------
+
+If the target environment cannot be proven,
+NO WRITE is authorized.
+
+Examples:
+
+- Expected Preview but connected to SQLite.
+- Expected PostgreSQL but connected elsewhere.
+- Expected feature head but deployed commit is unknown.
+- Expected non-production database but target identity
+  cannot be proven.
+
+  STATUS: ENVIRONMENT TARGET UNVERIFIED
+  ACTION: STOP BEFORE WRITE.
+
+Do not substitute local state and report it as
+Preview/Production validation.
+
+------------------------------------------------------------
+24.9 SPECIFICATION AMBIGUITY
+------------------------------------------------------------
+
+If both current implementation and proposed expected behavior
+are plausible and intended state does not resolve the question:
+
+  STATUS: SPECIFICATION DECISION REQUIRED
+
+The agent must:
+
+- describe factual behavior;
+- describe competing interpretations;
+- identify impact;
+- request OWNER decision.
+
+The agent may NOT invent a new business rule.
+
+------------------------------------------------------------
+24.10 NO QUALITY-GATE EVASION
+------------------------------------------------------------
+
+A quality gate exposing an unrelated temporary artifact
+does NOT authorize weakening the quality gate.
+
+  temporary broken seed → remove/fix temporary seed.
+  NOT: temporary broken seed → exclude scripts from compilation.
+
+  lint error → fix proven error.
+  NOT: disable lint globally.
+
+  failing test → classify/fix cause.
+  NOT: remove test from suite.
+
+  type error → fix/remove invalid artifact.
+  NOT: exclude directory merely to make build green.
+
+QUALITY GATES MAY NOT BE RELAXED AS A COMPENSING
+WORKAROUND.
+
+If a tooling/configuration change is independently
+architecturally required, it must be justified on its own merits.
+
+------------------------------------------------------------
+24.11 CANONICAL VALIDATION PATH
+------------------------------------------------------------
+
+Validation should exercise the authoritative production/business
+implementation whenever reasonably possible.
+
+DO NOT PROVE IMPLEMENTATION A BY REIMPLEMENTING A
+AS IMPLEMENTATION B.
+
+Tests may compute simple expected constants, but must not
+silently create a second competing business engine.
+
+Use canonical services/functions for final authoritative
+verification.
+
+------------------------------------------------------------
+24.12 REPRODUCTION PRESERVATION
+------------------------------------------------------------
+
+When valid evidence exposes a confirmed defect:
+
+  preserve the minimal reproduction until the fix is complete.
+
+  BEFORE FIX → reproduction demonstrates the defect.
+  AFTER FIX  → SAME reproduction passes.
+
+Do NOT replace the reproduction with an easier scenario.
+This provides evidence that the root cause was actually corrected.
+
+------------------------------------------------------------
+24.13 OWNER-APPROVED CONTRACT CHANGE PROCEDURE
+------------------------------------------------------------
+
+Implementation may reveal that the approved contract itself
+should change. That is allowed, but only through:
+
+  DIVERGENCE DETECTED
+  → evidence
+  → proposed contract change
+  → OWNER GO
+  → update intended-state documentation
+  → implementation
+  → tests
+  → verification
+
+The agent cannot self-authorize a contract change.
+
+------------------------------------------------------------
+24.14 DIVERGENCE REPORTING FORMAT
+------------------------------------------------------------
+
+When a contract divergence is detected, use this format:
+
+  CONTRACT DIVERGENCE DETECTED
+
+  FACTUAL STATE: <what the system currently does>
+  INTENDED STATE: <what approved contract requires>
+  EVIDENCE: <minimal objective evidence>
+  CLASSIFICATION:
+    IMPLEMENTATION DEFECT
+    / TEST DEFECT
+    / FIXTURE DEFECT
+    / ENVIRONMENT DEFECT
+    / SPECIFICATION AMBIGUITY
+    / UNKNOWN
+  COMPENSATING WORKAROUND APPLIED: NO
+  CORRECTIVE ACTION: <what is authorized>
+  OWNER DECISION REQUIRED: YES / NO
+
+------------------------------------------------------------
+24.15 STOP TRIGGERS
+------------------------------------------------------------
+
+If the agent is about to reason in a way equivalent to:
+
+  "I'll design the fixture accordingly."
+  "I'll change expected output to what the code returns."
+  "I'll exclude this file so the build passes."
+  "I'll disable this check temporarily."
+  "I'll use another calculation because the real service fails."
+  "I'll alter unrelated configuration so this scenario works."
+
+  → STOP.
+
+Return to divergence classification.
+No workaround may proceed until the cause is classified.
+
+------------------------------------------------------------
+24.16 UNIVERSAL INVARIANT
+------------------------------------------------------------
+
+TESTS AND FIXTURES ARE EVIDENCE.
+THEY ARE NOT TOOLS FOR MANUFACTURING PASS.
+
+A PASS is trustworthy only when:
+
+  IMPLEMENTATION + TEST + FIXTURE + ENVIRONMENT
+
+all conform to the same approved intended state.
+
+------------------------------------------------------------
+24.17 SESSION REMINDER
+------------------------------------------------------------
+
+Compact form for session context:
+
+  CONTRACT PRESERVATION
+
+  Never adapt tests, fixtures, seeds, mocks, quality gates,
+  or environment configuration merely to make defective
+  implementation behavior pass.
+
+  When factual behavior conflicts with OWNER-approved intended
+  behavior:
+
+    1. classify the divergence;
+    2. prove whether implementation, test, fixture, environment,
+       or specification is wrong;
+    3. correct the proven cause;
+    4. re-run the original evidence unchanged.
+
+  UNKNOWN → INVESTIGATE.
+  NEVER  UNKNOWN → WORKAROUND.
+
+  The agent may not silently redefine the contract
+  or manufacture PASS.
+
+------------------------------------------------------------
+24.18 CASE EXAMPLE
+------------------------------------------------------------
+
+  INTENDED:   Results for Classroom A / Period 1 only.
+  FACTUAL:    Service also consumes assessments from Period 2
+              or Classroom B.
+  PROHIBITED: Change fixture so all periods/classes contain
+              identical values.
+  REQUIRED:   Classify divergence → confirm implementation
+              defect → fix query scoping → run original
+              fixture again.
 
 ======================================================================
 END AI SOFTWARE ENGINEERING OS 0.1 PILOT
