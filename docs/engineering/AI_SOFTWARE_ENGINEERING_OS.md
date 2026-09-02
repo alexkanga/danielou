@@ -14,6 +14,7 @@ Operational implementation:
   S5 — AISE Product Requirements → docs/engineering/AISE_PRODUCT_REQUIREMENTS.md
   S6 — AISE Technical Specification → docs/engineering/AISE_TECHNICAL_SPECIFICATION.md
   S7 — AISE Project Manifest + ADR → docs/engineering/AISE_PROJECT_MANIFEST_ADR.md
+  S8 — AISE Roadmap / Milestone Design → docs/engineering/AISE_ROADMAP_MILESTONE_DESIGN.md
 
 Canonical component topology and lifecycle:
   AISE_ROADMAP → docs/engineering/AISE_ROADMAP.md

@@ -149,7 +149,7 @@ delivered?
 **Primary Outputs:** delivery roadmap, milestones, dependency
 ordering, major workstreams, entry/exit conditions, requirement
 coverage at milestone level.
-**Status:** PLANNED
+**Status:** CLOSED / PASS / CANONICAL
 
 S8 does NOT implement.
 
