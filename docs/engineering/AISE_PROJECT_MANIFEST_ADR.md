@@ -588,7 +588,7 @@ Before S7 OWNER_REVIEW:
 
 ## 30. FORWARD REFERENCES
 
-- S8 — Roadmap / Milestone Design: not yet implemented
+- S8 — Roadmap / Milestone Design: docs/engineering/AISE_ROADMAP_MILESTONE_DESIGN.md
 
 S7 does NOT invent S8 contents prematurely.
 
