@@ -173,6 +173,7 @@ S0 — AI_SOFTWARE_ENGINEERING_OS.md
 S1 — AISE_UNIVERSAL_LAUNCHER.md
 S2 — AISE_TASK_ROUTER.md
 S3 — AISE_NEW_PROJECT_BOOTSTRAP.md
+S4 — AISE_PROJECT_DISCOVERY_CHARTER.md
 ```
 
 **Source consistency is mandatory.** All components must come from
@@ -200,7 +201,7 @@ AISE MANIFEST
 INSTALLATION MODE:      VENDORED CANONICAL SNAPSHOT
 SOURCE REPOSITORY:     <canonical source identity>
 SOURCE COMMIT:         <full SHA>
-INSTALLED COMPONENTS:  S0, S1, S2, S3
+INSTALLED COMPONENTS:  S0, S1, S2, S3, S4
 INSTALLATION DATE:     <date>
 PROJECT AISE STATUS:   ACTIVE
 
@@ -208,6 +209,7 @@ S0 PATH:  docs/engineering/AI_SOFTWARE_ENGINEERING_OS.md
 S1 PATH:  docs/engineering/AISE_UNIVERSAL_LAUNCHER.md
 S2 PATH:  docs/engineering/AISE_TASK_ROUTER.md
 S3 PATH:  docs/engineering/AISE_NEW_PROJECT_BOOTSTRAP.md
+S4 PATH:  docs/engineering/AISE_PROJECT_DISCOVERY_CHARTER.md
 ```
 
 **Why the manifest exists:** The target repository must be able to
@@ -414,7 +416,8 @@ it into requirements, architecture, or code is premature execution.
 
 ## 20. FORWARD REFERENCES
 
-- S4 — Project Discovery / Charter (not yet implemented)
+- S4 — Project Discovery / Charter
+  (see `docs/engineering/AISE_PROJECT_DISCOVERY_CHARTER.md`)
 - S5 — Product Requirements (not yet implemented)
 - S6 — Technical Specification (not yet implemented)
 
