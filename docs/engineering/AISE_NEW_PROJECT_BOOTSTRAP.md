@@ -202,7 +202,7 @@ AISE MANIFEST
 INSTALLATION MODE:      VENDORED CANONICAL SNAPSHOT
 SOURCE REPOSITORY:     <canonical source identity>
 SOURCE COMMIT:         <full SHA>
-INSTALLED COMPONENTS:  S0, S1, S2, S3, S4, S5, S6, S7, S8
+INSTALLED COMPONENTS:  S0, S1, S2, S3, S4, S5, S6, S7, S8, S9
 INSTALLATION DATE:     <date>
 PROJECT AISE STATUS:   ACTIVE
 
@@ -215,6 +215,7 @@ S5 PATH:  docs/engineering/AISE_PRODUCT_REQUIREMENTS.md
 S6 PATH:  docs/engineering/AISE_TECHNICAL_SPECIFICATION.md
 S7 PATH:  docs/engineering/AISE_PROJECT_MANIFEST_ADR.md
 S8 PATH:  docs/engineering/AISE_ROADMAP_MILESTONE_DESIGN.md
+S9 PATH:  docs/engineering/AISE_MODULE_CONTRACT_WORK_PACKAGE.md
 ```
 
 **Why the manifest exists:** The target repository must be able to

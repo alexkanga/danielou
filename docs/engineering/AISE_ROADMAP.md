@@ -165,7 +165,7 @@ executable contract.
 **Expected Concepts:** purpose, requirements covered, in scope,
 out of scope, business behavior, technical boundaries, acceptance
 evidence, forbidden expansion, entry conditions, exit conditions.
-**Status:** PLANNED
+**Status:** CLOSED / PASS / CANONICAL
 
 ---
 
