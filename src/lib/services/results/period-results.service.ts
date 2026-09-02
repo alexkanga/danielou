@@ -257,6 +257,8 @@ async function computeStudentPeriodResults(
   configSubjects: (typeof configSubject.$inferSelect & {
     components: (typeof configComponent.$inferSelect)[];
   })[],
+  classroomId: string,
+  academicPeriodId: string,
   calculationPolicy: AggPolicy,
   subjectDp: number,
   generalDp: number,
@@ -290,7 +292,13 @@ async function computeStudentPeriodResults(
         const assessments = await db
           .select({ id: assessment.id, coefficient: assessment.coefficient, scale: assessment.scale })
           .from(assessment)
-          .where(eq(assessment.configComponentId, cc.id));
+          .where(
+            and(
+              eq(assessment.configComponentId, cc.id),
+              eq(assessment.classroomId, classroomId),
+              eq(assessment.academicPeriodId, academicPeriodId),
+            ),
+          );
 
         const assessmentResults: AssessmentResult[] = [];
         for (const a of assessments) {
@@ -338,7 +346,13 @@ async function computeStudentPeriodResults(
       const assessments = await db
         .select({ id: assessment.id, coefficient: assessment.coefficient, scale: assessment.scale })
         .from(assessment)
-        .where(eq(assessment.configSubjectId, cs.id));
+        .where(
+          and(
+            eq(assessment.configSubjectId, cs.id),
+            eq(assessment.classroomId, classroomId),
+            eq(assessment.academicPeriodId, academicPeriodId),
+          ),
+        );
 
       const assessmentResults: AssessmentResult[] = [];
       for (const a of assessments) {
@@ -471,6 +485,8 @@ export async function getPeriodResults(
     const result = await computeStudentPeriodResults(
       slot.enrollmentId,
       configSubjects,
+      classroomId,
+      academicPeriodId,
       calculationPolicy,
       subjectDp,
       generalDp,

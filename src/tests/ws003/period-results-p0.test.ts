@@ -41,7 +41,6 @@ function makeGrade(value: number | null, status: string, scale = 20, coefficient
 
 const servicePath = resolve('src/lib/services/results/period-results.service.ts');
 const pagePath = resolve('src/app/(dashboard)/dashboard/resultats/page.tsx');
-const apiPath = resolve('src/app/api/period-results/route.ts');
 
 // ─────────────────────────────────────────────
 // P0-READ: Pure Read Flow
@@ -264,13 +263,27 @@ describe('P0-ISO: Isolation', () => {
   });
 
   it('P0-ISO-03: no cross-period leakage', () => {
-    const content = readFileSync(apiPath, 'utf8');
-    expect(content).toContain('academicPeriodId');
+    const content = readFileSync(servicePath, 'utf8');
+    // Service must filter assessments by academicPeriodId
+    expect(content).toContain('eq(assessment.academicPeriodId, academicPeriodId)');
   });
 
   it('P0-ISO-04: enrollment/classroom assignment scope respected', () => {
     const content = readFileSync(servicePath, 'utf8');
     expect(content).toContain("eq(classroomAssignment.status, 'active')");
     expect(content).toContain("eq(enrollment.status, 'active')");
+  });
+
+  it('P0-ISO-05: no cross-classroom assessment leakage', () => {
+    const content = readFileSync(servicePath, 'utf8');
+    // Service must filter assessments by classroomId
+    expect(content).toContain('eq(assessment.classroomId, classroomId)');
+  });
+
+  it('P0-ISO-06: assessment scoping uses both classroom and period', () => {
+    const content = readFileSync(servicePath, 'utf8');
+    // Both filters must appear in the same and() block
+    expect(content).toContain('eq(assessment.classroomId, classroomId)');
+    expect(content).toContain('eq(assessment.academicPeriodId, academicPeriodId)');
   });
 });
