@@ -6,6 +6,9 @@ Status: ACTIVE PILOT
 Pilot Project: Daniélou
 Frozen Rules: §24 CONTRACT PRESERVATION
 
+Operational implementation:
+  S1 — AISE Universal Launcher → docs/engineering/AISE_UNIVERSAL_LAUNCHER.md
+
 ======================================================================
 0. PURPOSE
 ======================================================================
