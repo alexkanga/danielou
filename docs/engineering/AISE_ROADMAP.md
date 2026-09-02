@@ -105,6 +105,7 @@ traceable product requirements specification.
 
 ### S6 — TECHNICAL SPECIFICATION
 
+**File:** `docs/engineering/AISE_TECHNICAL_SPECIFICATION.md`
 **Question:** HOW will the approved product requirements be technically
 realized?
 **Role:** Define the technical solution that realizes the approved
@@ -113,7 +114,7 @@ product requirements.
 data architecture, interfaces, security design, testing strategy,
 deployment design, technical NFR realization, integration design.
 **Primary Output:** TECHNICAL_SPECIFICATION.
-**Status:** PLANNED
+**Status:** CLOSED / PASS / CANONICAL
 
 S6 does NOT produce the implementation roadmap.
 

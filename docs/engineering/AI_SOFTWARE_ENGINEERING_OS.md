@@ -12,6 +12,7 @@ Operational implementation:
   S3 — AISE New Project Bootstrap → docs/engineering/AISE_NEW_PROJECT_BOOTSTRAP.md
   S4 — AISE Project Discovery / Charter → docs/engineering/AISE_PROJECT_DISCOVERY_CHARTER.md
   S5 — AISE Product Requirements → docs/engineering/AISE_PRODUCT_REQUIREMENTS.md
+  S6 — AISE Technical Specification → docs/engineering/AISE_TECHNICAL_SPECIFICATION.md
 
 Canonical component topology and lifecycle:
   AISE_ROADMAP → docs/engineering/AISE_ROADMAP.md

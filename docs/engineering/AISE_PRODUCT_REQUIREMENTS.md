@@ -659,7 +659,7 @@ NEXT:                       S6 — Technical Specification
 
 ## 35. FORWARD REFERENCES
 
-- S6 — Technical Specification (not yet implemented)
+- S6 — AISE Technical Specification → docs/engineering/AISE_TECHNICAL_SPECIFICATION.md
 
 Routes whose detailed protocol does not yet exist as a standalone
 component use the current S0 normative flow until implemented.
