@@ -13,6 +13,9 @@ Operational implementation:
   S4 — AISE Project Discovery / Charter → docs/engineering/AISE_PROJECT_DISCOVERY_CHARTER.md
   S5 — AISE Product Requirements → docs/engineering/AISE_PRODUCT_REQUIREMENTS.md
 
+Canonical component topology and lifecycle:
+  AISE_ROADMAP → docs/engineering/AISE_ROADMAP.md
+
 ======================================================================
 0. PURPOSE
 ======================================================================
