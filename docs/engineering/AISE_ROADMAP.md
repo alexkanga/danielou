@@ -122,6 +122,7 @@ S6 does NOT produce the implementation roadmap.
 
 ### S7 — PROJECT MANIFEST + ADR
 
+**File:** `docs/engineering/AISE_PROJECT_MANIFEST_ADR.md`
 **Question:** What technical decisions and structural facts must remain
 canonical throughout the project's life?
 **Role:** Convert approved S6 design into durable technical memory.
@@ -132,7 +133,7 @@ boundaries, canonical infrastructure choices, data/storage decisions,
 auth/security decisions, deployment model, important rejected
 alternatives, decision rationale, consequences, immutable/frozen
 technical constraints where applicable.
-**Status:** PLANNED
+**Status:** CLOSED / PASS / CANONICAL
 
 S7 is NOT another Technical Specification. S6 describes the
 technical solution. S7 preserves the canonical technical decisions

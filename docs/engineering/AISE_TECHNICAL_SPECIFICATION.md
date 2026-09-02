@@ -828,7 +828,7 @@ resolved, re-classified, or routed through S0/S2 before proceeding.
 
 ## 35. FORWARD REFERENCES
 
-- S7 — Project Manifest + ADR: docs/engineering/AISE_PROJECT_MANIFEST_ADR.md (not yet implemented)
+- S7 — AISE Project Manifest + ADR → docs/engineering/AISE_PROJECT_MANIFEST_ADR.md
 
 S6 does NOT invent S7 contents prematurely.
 
