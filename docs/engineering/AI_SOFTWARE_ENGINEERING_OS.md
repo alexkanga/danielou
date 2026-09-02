@@ -11,6 +11,7 @@ Operational implementation:
   S2 — AISE Task Router → docs/engineering/AISE_TASK_ROUTER.md
   S3 — AISE New Project Bootstrap → docs/engineering/AISE_NEW_PROJECT_BOOTSTRAP.md
   S4 — AISE Project Discovery / Charter → docs/engineering/AISE_PROJECT_DISCOVERY_CHARTER.md
+  S5 — AISE Product Requirements → docs/engineering/AISE_PRODUCT_REQUIREMENTS.md
 
 ======================================================================
 0. PURPOSE

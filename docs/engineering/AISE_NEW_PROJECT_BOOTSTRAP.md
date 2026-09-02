@@ -174,6 +174,7 @@ S1 — AISE_UNIVERSAL_LAUNCHER.md
 S2 — AISE_TASK_ROUTER.md
 S3 — AISE_NEW_PROJECT_BOOTSTRAP.md
 S4 — AISE_PROJECT_DISCOVERY_CHARTER.md
+S5 — AISE_PRODUCT_REQUIREMENTS.md
 ```
 
 **Source consistency is mandatory.** All components must come from
@@ -201,7 +202,7 @@ AISE MANIFEST
 INSTALLATION MODE:      VENDORED CANONICAL SNAPSHOT
 SOURCE REPOSITORY:     <canonical source identity>
 SOURCE COMMIT:         <full SHA>
-INSTALLED COMPONENTS:  S0, S1, S2, S3, S4
+INSTALLED COMPONENTS:  S0, S1, S2, S3, S4, S5
 INSTALLATION DATE:     <date>
 PROJECT AISE STATUS:   ACTIVE
 
@@ -210,6 +211,7 @@ S1 PATH:  docs/engineering/AISE_UNIVERSAL_LAUNCHER.md
 S2 PATH:  docs/engineering/AISE_TASK_ROUTER.md
 S3 PATH:  docs/engineering/AISE_NEW_PROJECT_BOOTSTRAP.md
 S4 PATH:  docs/engineering/AISE_PROJECT_DISCOVERY_CHARTER.md
+S5 PATH:  docs/engineering/AISE_PRODUCT_REQUIREMENTS.md
 ```
 
 **Why the manifest exists:** The target repository must be able to
