@@ -328,6 +328,7 @@ weakening frozen invariants.
 
 **Purpose:** Bring an already implemented project under AISE
 governance.
+**File:** `docs/engineering/AISE_BROWNFIELD_ADOPTION_PROTOCOL.md`
 **Typical Flow:**
 ```
 VERIFY EXISTING REPOSITORY → INVENTORY FACTUAL STATE →
@@ -336,7 +337,7 @@ CREATE AISE_MANIFEST → ESTABLISH PROJECT_STATE →
 BASELINE EXISTING SYSTEM → OWNER-APPROVED ADOPTION
 ```
 Must NOT pretend existing software is a greenfield S3 bootstrap.
-**Status:** PLANNED
+**Status:** CLOSED / PASS / CANONICAL
 
 ---
 

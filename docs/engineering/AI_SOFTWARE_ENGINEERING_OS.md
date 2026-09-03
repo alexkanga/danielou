@@ -27,6 +27,7 @@ Operational implementation:
   R4 — AISE Investigation Protocol → docs/engineering/AISE_INVESTIGATION_PROTOCOL.md
   R5 — AISE Contract Divergence Protocol → docs/engineering/AISE_CONTRACT_DIVERGENCE_PROTOCOL.md
   R6 — AISE Governance Change Protocol → docs/engineering/AISE_GOVERNANCE_CHANGE_PROTOCOL.md
+  R7 — AISE Brownfield Adoption Protocol → docs/engineering/AISE_BROWNFIELD_ADOPTION_PROTOCOL.md
 
 Canonical component topology and lifecycle:
   AISE_ROADMAP → docs/engineering/AISE_ROADMAP.md
