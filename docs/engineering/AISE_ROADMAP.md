@@ -291,7 +291,7 @@ clear approved intent.
 
 **Purpose:** Restore trusted continuity/state from canonical evidence.
 Formalizes the recovery behavior already governed by S0.
-**Status:** PLANNED
+**Status:** CLOSED / PASS / CANONICAL
 
 ---
 

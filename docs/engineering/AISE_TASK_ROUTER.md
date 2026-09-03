@@ -64,6 +64,8 @@ uncertain, local work cannot be trusted, failed/partial operation,
 repository or environment state inconsistent, authorized work must
 restart from verified state. RECOVERY is NOT routine debugging.
 
+R3 protocol → docs/engineering/AISE_RECOVERY_PROTOCOL.md
+
 ### CONTRACT_DIVERGENCE
 
 Factual State ≠ OWNER-approved Intended State, and cause has NOT yet
