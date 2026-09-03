@@ -55,6 +55,8 @@ Implementation defect is already proven AND intended behavior is clear
 AND the request is to correct that defect with minimum sufficient change.
 HOTFIX must NOT be selected merely because a test fails.
 
+R2 protocol → docs/engineering/AISE_HOTFIX_PROTOCOL.md
+
 ### RECOVERY
 
 Trusted continuity itself is compromised: canonical branch/head
