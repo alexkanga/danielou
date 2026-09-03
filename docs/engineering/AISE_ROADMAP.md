@@ -283,7 +283,7 @@ without replaying the full greenfield lifecycle.
 
 **Purpose:** Correct a PROVEN implementation defect relative to
 clear approved intent.
-**Status:** PLANNED
+**Status:** CLOSED / PASS / CANONICAL
 
 ---
 

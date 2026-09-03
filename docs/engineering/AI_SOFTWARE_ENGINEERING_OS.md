@@ -22,6 +22,7 @@ Operational implementation:
   S13 — AISE Production Deployment & Verification → docs/engineering/AISE_PRODUCTION_DEPLOYMENT_VERIFICATION.md
   S14 — AISE Operational Handover / Baseline Closure → docs/engineering/AISE_OPERATIONAL_HANDOVER_BASELINE_CLOSURE.md
   R1 — AISE Module / Change Protocol → docs/engineering/AISE_MODULE_CHANGE_PROTOCOL.md
+  R2 — AISE Hotfix Protocol → docs/engineering/AISE_HOTFIX_PROTOCOL.md
 
 Canonical component topology and lifecycle:
   AISE_ROADMAP → docs/engineering/AISE_ROADMAP.md
