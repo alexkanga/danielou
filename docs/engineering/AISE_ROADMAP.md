@@ -319,7 +319,8 @@ specification, unknown.
 
 **Purpose:** Modify AISE/project governance without silently
 weakening frozen invariants.
-**Status:** PLANNED
+**File:** `docs/engineering/AISE_GOVERNANCE_CHANGE_PROTOCOL.md`
+**Status:** CLOSED / PASS / CANONICAL
 
 ---
 
