@@ -72,6 +72,8 @@ Factual State ≠ OWNER-approved Intended State, and cause has NOT yet
 been safely classified. This route has precedence over automatic
 HOTFIX. Must classify before corrective action (see §4).
 
+R5 protocol → docs/engineering/AISE_CONTRACT_DIVERGENCE_PROTOCOL.md
+
 ### GOVERNANCE
 
 Authorized modifications to AISE, engineering governance, process
