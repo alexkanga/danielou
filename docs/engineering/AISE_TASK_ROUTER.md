@@ -80,6 +80,8 @@ Authorized modifications to AISE, engineering governance, process
 contracts, or frozen methodology. Does NOT automatically authorize
 weakening FROZEN rules — explicit Owner approval required.
 
+R6 protocol → docs/engineering/AISE_GOVERNANCE_CHANGE_PROTOCOL.md
+
 ### INVESTIGATION
 
 Owner authorizes diagnosis/research and no corrective route can yet be
