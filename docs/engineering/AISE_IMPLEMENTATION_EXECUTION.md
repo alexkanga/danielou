@@ -975,3 +975,108 @@ S10 is:
 - applicable to greenfield and brownfield work
 - compatible with MODULE / HOTFIX / RECOVERY-adjacent execution
   once routed correctly
+
+---
+
+## 66. EXTERNAL PARAMETER / CREDENTIAL GATE
+
+This section implements the S0 §25 EXTERNAL PARAMETER GATE invariant.
+
+### 66.1 JUST-IN-TIME REQUEST
+
+REQUEST EXTERNAL PARAMETERS ONLY AT THE EXACT BOUNDARY WHERE THE
+CURRENTLY AUTHORIZED OPERATION GENUINELY REQUIRES THEM.
+
+Do NOT ask at project start for GitHub, Neon, Vercel, database, or
+API credentials merely because they may eventually be required.
+
+Example: public GitHub clone/fetch works anonymously → no credential
+request. Push reached → authenticated write access is now required →
+request at that point.
+
+### 66.2 ENVIRONMENT-FIRST DISCOVERY
+
+Before requesting any parameter from OWNER, inspect the current
+authorized execution environment for an existing legitimate mechanism:
+
+- environment variables
+- credential helper
+- authenticated CLI
+- configured SSH identity
+- platform secret injection
+- connected service configuration
+
+If a valid mechanism exists: verify capability and target, then
+continue. Do NOT ask OWNER for the underlying secret.
+
+### 66.3 PARAMETER CATEGORIES
+
+**A. PROJECT PARAMETER** — Business/product configuration (school name,
+academic year, thresholds, locale). May be requested from OWNER when
+required by approved product intent.
+
+**B. EXTERNAL NON-SECRET PARAMETER** — Repository URL, project name,
+API base URL, environment name. Request the exact missing value when
+cannot be discovered from canonical evidence.
+
+**C. EXTERNAL SECRET / CREDENTIAL** — GitHub PAT, DATABASE_URL, API
+key, OAuth secret, private key, deployment credential. The agent must
+state: WHAT, WHY, WHY NOW, WHERE, WHAT SCOPE, WHAT TARGET. Prefer
+configuration through the legitimate secret/authentication mechanism
+of the execution environment rather than asking OWNER to paste secrets
+into chat.
+
+### 66.4 MINIMUM REQUIRED PRIVILEGE
+
+Request only the minimum access/scope required for the authorized
+operation. Do NOT request admin/full-access credentials when
+read-only or limited scope is sufficient.
+
+### 66.5 SECRET HANDLING
+
+Do NOT store, echo, or expose secret values in: source code, repository
+files, documentation, commits, PR descriptions, fixtures, test
+snapshots, generated reports, logs, git remote URLs, debug output,
+shell history.
+
+### 66.6 TARGET VERIFICATION
+
+**CREDENTIAL AVAILABLE ≠ TARGET VERIFIED.**
+
+Before any external write operation, verify the actual target:
+repository, service, project, environment, database, deployment target.
+
+**TARGET NOT VERIFIED → NO WRITE.**
+
+### 66.7 EXTERNAL PARAMETER BLOCKER
+
+When a required external parameter/capability is unavailable:
+
+1. Classify as **EXTERNAL PARAMETER BLOCKER** (not implementation defect).
+2. Report structured blocker: SYSTEM, BLOCKED OPERATION, REQUIRED
+   PARAMETER(S) with NAME / CATEGORY / PURPOSE / SECRET / EXPECTED
+   LOCATION / EXPECTED FORMAT / REQUIRED SCOPE / TARGET / WHY REQUIRED
+   NOW / CURRENT COMPLETED STATE / RESUME POINT / OWNER ACTION.
+3. Preserve all completed work.
+4. Record the exact RESUME POINT.
+5. STOP at the boundary.
+
+Do NOT change implementation, switch database, skip integration testing,
+create fake responses, change target, or disable verification to avoid
+the blocker.
+
+### 66.8 RESUME AFTER CONFIGURATION
+
+When the required capability is configured:
+
+1. Verify the parameter now exists.
+2. Verify required access/scope.
+3. Verify target identity.
+4. Before resuming delayed external work (push/deployment/DB write),
+   verify whether canonical main materially advanced while blocked.
+5. Resume from the exact RESUME POINT.
+6. Do NOT repeat completed work (discovery, design, implementation,
+   already-passed tests, commit creation) unless canonical state
+   materially changed or evidence became invalid.
+
+CONFIGURATION RECOVERY → RESUME, not RESTART.
