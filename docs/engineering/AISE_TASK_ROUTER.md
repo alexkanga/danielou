@@ -82,6 +82,15 @@ weakening FROZEN rules — explicit Owner approval required.
 
 R6 protocol → docs/engineering/AISE_GOVERNANCE_CHANGE_PROTOCOL.md
 
+### EXISTING_PROJECT
+
+An existing project that does not yet have a sufficiently trustworthy
+AISE baseline. Bringing the project under AISE governance without
+replaying greenfield history. NOT for new projects (S3) or changes
+inside already-managed projects (R1).
+
+R7 protocol → docs/engineering/AISE_BROWNFIELD_ADOPTION_PROTOCOL.md
+
 ### INVESTIGATION
 
 Owner authorizes diagnosis/research and no corrective route can yet be
@@ -210,6 +219,7 @@ that evidence already resolves.
 | Factual ≠ intended (cause unclassified)  | CONTRACT_DIVERGENCE  | classify first                    |
 | Continuity/state untrusted               | RECOVERY             | restore verified base             |
 | AISE/process/governance change           | GOVERNANCE           | frozen-rule gate                  |
+| Existing project without AISE baseline   | EXISTING_PROJECT     | brownfield adoption               |
 | Cause not yet proven                     | INVESTIGATION        | read-only default                 |
 
 ---
