@@ -310,7 +310,8 @@ implementation. Default: READ-ONLY.
 **Classification:** implementation, test, fixture/data, environment,
 specification, unknown.
 **Invariants:** UNKNOWN → INVESTIGATE. NEVER UNKNOWN → WORKAROUND.
-**Status:** PLANNED
+**File:** `docs/engineering/AISE_CONTRACT_DIVERGENCE_PROTOCOL.md`
+**Status:** CLOSED / PASS / CANONICAL
 
 ---
 

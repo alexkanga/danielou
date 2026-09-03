@@ -202,7 +202,7 @@ AISE MANIFEST
 INSTALLATION MODE:      VENDORED CANONICAL SNAPSHOT
 SOURCE REPOSITORY:     <canonical source identity>
 SOURCE COMMIT:         <full SHA>
-INSTALLED COMPONENTS:  S0, S1, S2, S3, S4, S5, S6, S7, S8, S9, S10, S11, S12, S13, S14, R1, R2, R3, R4
+INSTALLED COMPONENTS:  S0, S1, S2, S3, S4, S5, S6, S7, S8, S9, S10, S11, S12, S13, S14, R1, R2, R3, R4, R5
 INSTALLATION DATE:     <date>
 PROJECT AISE STATUS:   ACTIVE
 
@@ -225,6 +225,7 @@ R1 PATH:  docs/engineering/AISE_MODULE_CHANGE_PROTOCOL.md
 R2 PATH:  docs/engineering/AISE_HOTFIX_PROTOCOL.md
 R3 PATH:  docs/engineering/AISE_RECOVERY_PROTOCOL.md
 R4 PATH:  docs/engineering/AISE_INVESTIGATION_PROTOCOL.md
+R5 PATH:  docs/engineering/AISE_CONTRACT_DIVERGENCE_PROTOCOL.md
 ```
 
 **Why the manifest exists:** The target repository must be able to
