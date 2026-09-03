@@ -866,7 +866,7 @@ critical functional results, integration results, known
 non-blocking findings, residual risks, production verdict, recovery
 actions if any, actual factual production baseline — to:
 
-**S14 — OPERATIONAL HANDOVER / BASELINE CLOSURE**
+**S14 — OPERATIONAL HANDOVER / BASELINE CLOSURE** → docs/engineering/AISE_OPERATIONAL_HANDOVER_BASELINE_CLOSURE.md
 
 ---
 

@@ -253,12 +253,15 @@ production state.
 delivered requirements, migration state, known backlog, operational/
 runbook pointers, release status, next authorized unit.
 **Primary Output:** NEW CANONICAL BASELINE.
-**Status:** PLANNED
+**Status:** CLOSED / PASS / CANONICAL
 
 Canonical cycle: INTENDED STATE → IMPLEMENTATION → VERIFICATION
 → PRODUCTION → NEW VERIFIED FACTUAL STATE.
 
 ---
+CORE DELIVERY SPINE S0-S14: COMPLETE / CANONICAL
+
+TRANSVERSE PROTOCOLS R1-R7: PLANNED
 
 ## TRANSVERSE ROUTE PROTOCOLS
 
