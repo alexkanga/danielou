@@ -4,7 +4,7 @@ AI SOFTWARE ENGINEERING OS
 Version: 0.1 PILOT
 Status: ACTIVE PILOT
 Pilot Project: Daniélou
-Frozen Rules: §24 CONTRACT PRESERVATION
+Frozen Rules: §24 CONTRACT PRESERVATION · §25 EXTERNAL PARAMETER GATE
 
 Operational implementation:
   S1 — AISE Universal Launcher → docs/engineering/AISE_UNIVERSAL_LAUNCHER.md
@@ -1175,6 +1175,60 @@ Compact form for session context:
   REQUIRED:   Classify divergence → confirm implementation
               defect → fix query scoping → run original
               fixture again.
+
+======================================================================
+
+======================================================================
+25. FROZEN EXTERNAL PARAMETER GATE
+======================================================================
+
+FROZEN — OWNER-approved universal invariant.
+
+DO NOT REQUEST EXTERNAL PARAMETERS PREEMPTIVELY.
+
+Proceed autonomously until the currently authorized unit reaches an
+operation that genuinely requires an external parameter, credential,
+external identifier, connection setting, or authenticated capability.
+
+At that exact boundary:
+
+1. inspect whether the required parameter/capability already exists;
+2. verify whether it is appropriate for the intended target;
+3. if valid, continue;
+4. if unavailable, STOP only at that external boundary;
+5. report exactly what is required, why, where, with what scope;
+6. preserve all completed work;
+7. record the exact RESUME POINT;
+8. after configuration, verify availability and target;
+9. resume from that exact point;
+10. do NOT repeat completed work unnecessarily.
+
+Missing external parameter ≠ implementation defect.
+
+Classify as: EXTERNAL PARAMETER BLOCKER.
+
+Three parameter categories:
+
+  A. PROJECT PARAMETER
+     (business configuration: school name, academic year, thresholds)
+
+  B. EXTERNAL NON-SECRET PARAMETER
+     (repository URL, project identifier, API base URL)
+
+  C. EXTERNAL SECRET / CREDENTIAL
+     (GitHub PAT, DATABASE_URL, API key, OAuth secret, private key)
+
+CREDENTIAL AVAILABLE ≠ TARGET VERIFIED.
+
+Before any external write operation:
+  TARGET NOT VERIFIED → NO WRITE.
+
+Do NOT store, echo, or expose secret values in source code,
+repository files, commits, PRs, documentation, logs, or shell history.
+
+Request only MINIMUM REQUIRED EXTERNAL PRIVILEGE.
+
+S10 defines the operational implementation of this invariant.
 
 ======================================================================
 END AI SOFTWARE ENGINEERING OS 0.1 PILOT
