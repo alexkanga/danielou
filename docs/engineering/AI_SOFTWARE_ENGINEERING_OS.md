@@ -16,6 +16,7 @@ Operational implementation:
   S7 — AISE Project Manifest + ADR → docs/engineering/AISE_PROJECT_MANIFEST_ADR.md
   S8 — AISE Roadmap / Milestone Design → docs/engineering/AISE_ROADMAP_MILESTONE_DESIGN.md
   S9 — AISE Module Contract / Work Package → docs/engineering/AISE_MODULE_CONTRACT_WORK_PACKAGE.md
+  S10 — AISE Implementation Execution → docs/engineering/AISE_IMPLEMENTATION_EXECUTION.md
 
 Canonical component topology and lifecycle:
   AISE_ROADMAP → docs/engineering/AISE_ROADMAP.md

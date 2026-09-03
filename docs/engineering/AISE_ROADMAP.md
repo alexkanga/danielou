@@ -189,7 +189,7 @@ VERIFIED BASE
 → UPDATE STATE
 → STOP
 ```
-**Status:** PLANNED
+**Status:** CLOSED / PASS / CANONICAL
 
 ---
 
