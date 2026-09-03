@@ -24,6 +24,7 @@ Operational implementation:
   R1 — AISE Module / Change Protocol → docs/engineering/AISE_MODULE_CHANGE_PROTOCOL.md
   R2 — AISE Hotfix Protocol → docs/engineering/AISE_HOTFIX_PROTOCOL.md
   R3 — AISE Recovery Protocol → docs/engineering/AISE_RECOVERY_PROTOCOL.md
+  R4 — AISE Investigation Protocol → docs/engineering/AISE_INVESTIGATION_PROTOCOL.md
 
 Canonical component topology and lifecycle:
   AISE_ROADMAP → docs/engineering/AISE_ROADMAP.md

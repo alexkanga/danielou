@@ -84,6 +84,8 @@ Owner authorizes diagnosis/research and no corrective route can yet be
 proven. Read-only by default. May produce evidence and classification.
 May NOT silently become implementation work.
 
+R4 protocol → docs/engineering/AISE_INVESTIGATION_PROTOCOL.md
+
 ---
 
 ## 3. PRECEDENCE

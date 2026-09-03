@@ -299,7 +299,8 @@ Formalizes the recovery behavior already governed by S0.
 
 **Purpose:** Diagnose an unknown cause without silently becoming
 implementation. Default: READ-ONLY.
-**Status:** PLANNED
+**File:** `docs/engineering/AISE_INVESTIGATION_PROTOCOL.md`
+**Status:** CLOSED / PASS / CANONICAL
 
 ---
 
