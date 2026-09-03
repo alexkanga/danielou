@@ -324,13 +324,8 @@ Do NOT record secret values. Do NOT dump entire environment.
 ## 19. EXTERNAL DEPENDENCY BASELINE
 
 Where release materially relies on external systems, record only relevant
-operational state:
-
-- provider
-- environment
-- integration active/inactive
-- known limitation
-- material residual dependency risk
+operational state: provider, environment, integration active/inactive,
+known limitation, material residual dependency risk.
 
 Do not create external-system inventory.
 
@@ -338,15 +333,9 @@ Do not create external-system inventory.
 
 ## 20. OPERATIONAL REFERENCES
 
-S14 may record pointers to existing operational resources:
-
-- deployment platform
-- logs
-- health endpoint
-- runbook
-- recovery documentation
-- dashboard
-- support procedure
+S14 may record pointers to existing operational resources: deployment
+platform, logs, health endpoint, runbook, recovery documentation,
+dashboard, support procedure.
 
 Do NOT create new operational infrastructure automatically.
 
@@ -371,13 +360,8 @@ Do not erase findings just because release closed.
 ## 22. RESIDUAL RISK
 
 Record only material residual risk that future work/operators should know.
-
-Examples:
-
-- external provider limitation
-- manual operational constraint
-- known non-blocking defect
-- technical debt affecting next work
+Examples: external provider limitation, manual operational constraint,
+known non-blocking defect, technical debt affecting next work.
 
 Do not turn S14 into a risk registry program.
 
@@ -526,13 +510,8 @@ state.
 
 ## 32. RELEASE DOCUMENT CLOSURE
 
-Actual project release artifacts may include:
-
-- S12 readiness report
-- S13 production verification report
-- S14 closure report
-
-S14 should link them rather than duplicate their contents.
+S14 should link S12/S13/S14 release artifacts rather than duplicate
+their contents.
 
 ---
 
@@ -542,29 +521,12 @@ For actual project execution, suggested durable artifact:
 
 `docs/release/RC-<ID>_BASELINE_CLOSURE.md`
 
-or established project equivalent.
-
-Recommended structure:
-
-```
-# OPERATIONAL HANDOVER / BASELINE CLOSURE — RC-XXX
-
-## 1. Closure Status
-## 2. Release Outcome
-## 3. Canonical Repository State
-## 4. Actual Production Baseline
-## 5. Delivered Scope
-## 6. Milestone / WP Status
-## 7. Database / Migration State
-## 8. Configuration References
-## 9. External Dependency State
-## 10. Known Findings / Residual Risks
-## 11. Operational References
-## 12. PROJECT_STATE Update
-## 13. Divergences
-## 14. Next Recommended Route
-## 15. Final Baseline Verdict
-```
+or established project equivalent. Recommended sections: Closure
+Status, Release Outcome, Canonical Repository State, Actual Production
+Baseline, Delivered Scope, Milestone/WP Status, Database/Migration
+State, Configuration References, External Dependency State, Known
+Findings/Residual Risks, Operational References, PROJECT_STATE Update,
+Divergences, Next Recommended Route, Final Baseline Verdict.
 
 Keep it concise.
 
@@ -596,8 +558,7 @@ A recovered baseline closure must clearly distinguish:
 - ATTEMPTED RC → FAILED / NOT DELIVERED
 - ACTUAL PROD BASELINE → RECOVERED / VERIFIED
 
-Do not claim intended release delivered. This is important for future
-agents.
+Do not claim intended release delivered.
 
 ---
 
@@ -615,16 +576,9 @@ Unknown production truth is a blocker to trustworthy baseline closure.
 
 ## 37. EVIDENCE SOURCES
 
-S14 may consume:
-
-- S13 production report
-- deployment platform identity
-- git history
-- release tags
-- migration state evidence
-- PROJECT_STATE
-- release artifact identity
-- approved environment metadata
+S14 may consume: S13 production report, deployment platform identity,
+git history, release tags, migration state evidence, PROJECT_STATE,
+release artifact identity, approved environment metadata.
 
 Do not recollect data unnecessarily if S13 evidence is fresh and
 trustworthy.
@@ -691,38 +645,24 @@ Do NOT create multiple competing state documents.
 Prefer established project artifacts: PROJECT_STATE, PROJECT_MANIFEST,
 DELIVERY_ROADMAP, release closure artifact, ADRs.
 
-Each has a distinct responsibility.
-
 ---
 
 ## 43. MINIMUM SUFFICIENT HANDOVER
 
-S14 handover should be sufficient, not exhaustive.
+S14 handover should be sufficient, not exhaustive. Record information
+required to understand current state, operate safely, and resume future
+engineering.
 
-Record information required to:
-
-- understand current state
-- operate safely
-- resume future engineering
-
-Do NOT create: huge operations manual, full code inventory, full
-dependency inventory, full infrastructure map — unless already
-required by project.
+Do NOT create: huge operations manual, full code/dependency inventory,
+full infrastructure map — unless already required by project.
 
 ---
 
 ## 44. NO PRODUCTION WRITE
 
-S14 is read/document/update-repository by default.
-
-It must NOT:
-
-- deploy
-- migrate
-- change production config
-- change production DB
-- change DNS
-- trigger external side effects
+S14 is read/document/update-repository by default. It must NOT:
+deploy, migrate, change production config/DB/DNS, or trigger external
+side effects.
 
 If a production correction is needed: route separately.
 
@@ -755,8 +695,6 @@ assumed to refer to the correct system.
 
 For any write: **TARGET NOT VERIFIED → NO WRITE.**
 
-S14 should normally have no production writes.
-
 ---
 
 ## 47. SECRET HANDLING
@@ -781,29 +719,18 @@ references — when sufficient.
 
 ## 49. AUDITABILITY
 
-S14 should make it possible to determine:
-
-- which release attempt occurred
-- whether it succeeded
-- what is actually deployed
-- what baseline is canonical
-- what was deferred
-- what remains known
-- what route comes next
-
-without unnecessary operational detail.
+S14 should make it possible to determine which release attempt
+occurred, whether it succeeded, what is actually deployed, what baseline
+is canonical, what was deferred, what remains known, and what route
+comes next — without unnecessary operational detail.
 
 ---
 
 ## 50. GIT STATE
 
-For actual project closure record where useful:
-
-- canonical main SHA
-- release commit
-- release tag if used
-- whether release commit is contained in main
-- pending release branches if relevant
+For actual project closure record where useful: canonical main SHA,
+release commit, release tag if used, whether release commit is contained
+in main, pending release branches if relevant.
 
 Do not clean unrelated branches as part of S14.
 
@@ -1274,16 +1201,9 @@ closure bureaucracy, process theatre.
 
 ## 67. COMPATIBILITY
 
-S14 is:
-
-- project-agnostic
-- technology-neutral
-- usable by AI agents
-- usable by human operators
-- usable without chat history
-- factual-state oriented
-- minimal but sufficient
-- compatible with both simple and complex projects
+S14 is: project-agnostic, technology-neutral, usable by AI agents and
+human operators, usable without chat history, factual-state oriented,
+minimal but sufficient, compatible with both simple and complex projects.
 
 ---
 
@@ -1354,25 +1274,11 @@ Do not redesign roadmap.
 
 ## 71. DO NOT APPLY S14 TO DANIELOU
 
-STRICTLY DO NOT MODIFY:
-
-- Daniélou PROJECT_STATE
-- application code
-- Daniélou WS contracts
-- application tests
-- fixtures
-- schema
-- migrations
-- application DELIVERY_ROADMAP
-- PRODUCT_REQUIREMENTS
-- TECHNICAL_SPECIFICATION
-- PROJECT_MANIFEST
-- application ADRs
-- deployment configuration
-- Vercel
-- Neon
-- production environment
-- actual release artifacts
+STRICTLY DO NOT MODIFY: Daniélou PROJECT_STATE, application code,
+Daniélou WS contracts, application tests, fixtures, schema, migrations,
+application DELIVERY_ROADMAP, PRODUCT_REQUIREMENTS, TECHNICAL_SPECIFICATION,
+PROJECT_MANIFEST, application ADRs, deployment configuration, Vercel,
+Neon, production environment, actual release artifacts.
 
 This task defines universal S14 only.
 
