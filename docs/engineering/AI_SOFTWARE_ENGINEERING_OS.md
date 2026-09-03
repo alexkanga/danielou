@@ -17,6 +17,7 @@ Operational implementation:
   S8 — AISE Roadmap / Milestone Design → docs/engineering/AISE_ROADMAP_MILESTONE_DESIGN.md
   S9 — AISE Module Contract / Work Package → docs/engineering/AISE_MODULE_CONTRACT_WORK_PACKAGE.md
   S10 — AISE Implementation Execution → docs/engineering/AISE_IMPLEMENTATION_EXECUTION.md
+  S11 — AISE Verification & Acceptance → docs/engineering/AISE_VERIFICATION_ACCEPTANCE.md
 
 Canonical component topology and lifecycle:
   AISE_ROADMAP → docs/engineering/AISE_ROADMAP.md
