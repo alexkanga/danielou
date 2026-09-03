@@ -47,6 +47,8 @@ Authorized functional or technical unit inside an existing healthy
 project. New feature, new module, planned milestone, authorized
 enhancement. This is NOT for correcting a proven defect.
 
+R1 protocol → docs/engineering/AISE_MODULE_CHANGE_PROTOCOL.md
+
 ### HOTFIX
 
 Implementation defect is already proven AND intended behavior is clear

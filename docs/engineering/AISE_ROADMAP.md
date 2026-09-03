@@ -275,7 +275,7 @@ exists, current S0/S2 normative behavior remains authoritative.
 
 **Purpose:** Handle a bounded change inside an existing project
 without replaying the full greenfield lifecycle.
-**Status:** PLANNED
+**Status:** CLOSED / PASS / CANONICAL
 
 ---
 
