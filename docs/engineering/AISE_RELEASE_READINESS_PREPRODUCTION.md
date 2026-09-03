@@ -820,7 +820,7 @@ requirements, external dependency state, production target identity,
 deployment order, smoke checks, recovery procedure, known
 non-blocking findings, residual risks, OWNER PROD GO status — to:
 
-**S13 — PRODUCTION DEPLOYMENT & VERIFICATION**
+**S13 — PRODUCTION DEPLOYMENT & VERIFICATION**: docs/engineering/AISE_PRODUCTION_DEPLOYMENT_VERIFICATION.md
 
 ---
 
