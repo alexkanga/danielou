@@ -20,6 +20,7 @@ Operational implementation:
   S11 — AISE Verification & Acceptance → docs/engineering/AISE_VERIFICATION_ACCEPTANCE.md
   S12 — AISE Release Readiness / Preproduction → docs/engineering/AISE_RELEASE_READINESS_PREPRODUCTION.md
   S13 — AISE Production Deployment & Verification → docs/engineering/AISE_PRODUCTION_DEPLOYMENT_VERIFICATION.md
+  S14 — AISE Operational Handover / Baseline Closure → docs/engineering/AISE_OPERATIONAL_HANDOVER_BASELINE_CLOSURE.md
 
 Canonical component topology and lifecycle:
   AISE_ROADMAP → docs/engineering/AISE_ROADMAP.md
