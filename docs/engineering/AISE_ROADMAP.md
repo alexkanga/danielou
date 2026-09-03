@@ -218,7 +218,7 @@ verification, migration readiness, rollback readiness where relevant,
 configuration readiness, known issues, release candidate integrity,
 material blockers.
 **Primary Output:** RELEASE_READINESS_REPORT.
-**Status:** PLANNED
+**Status:** CLOSED / PASS / CANONICAL
 
 Critical/material HIGH issues may block.
 Moderate/LOW observations do not automatically become blocking

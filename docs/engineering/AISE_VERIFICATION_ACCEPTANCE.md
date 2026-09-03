@@ -620,7 +620,7 @@ Do NOT start S12 automatically.
 Only when release-baseline coverage is complete, S11 hands off:
 verified WP set, implementation commits, verification reports,
 quality-gate evidence, migration verification, known findings,
-residual risks, release-scope coverage — to S12.
+residual risks, release-scope coverage — to S12: docs/engineering/AISE_RELEASE_READINESS_PREPRODUCTION.md
 
 ---
 
