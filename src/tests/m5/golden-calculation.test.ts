@@ -186,9 +186,13 @@ describe('Policy Divergence (§6D)', () => {
 // ─────────────────────────────────────────────
 
 describe('Grade Status (§14)', () => {
-  it('ABSENCE != ZERO', () => {
+  it('ABSENCE != ZERO — AJ/EXEMPT/NE neutral, AI penalizing zero (WS-003 §7)', () => {
+    // WS-003 Contract supersedes previous "all absences excluded" behavior.
+    // AI is now penalizing zero: earned=0, full max retained.
+    // AJ remains neutral/excluded.
     const r = calculateAssessmentResult([makeGrade(14,'graded'), makeGrade(null,'absent_excused'), makeGrade(12,'graded'), makeGrade(null,'absent_unexcused'), makeGrade(16,'graded')], 'simple_average', 20);
-    expect(r.result).toBe('14'); expect(r.contributingCount).toBe(3); expect(r.excludedCount).toBe(2);
+    // (14 + 12 + 0 + 16) / 4 = 10.5
+    expect(r.result).toBe('10.5'); expect(r.contributingCount).toBe(4); expect(r.excludedCount).toBe(1);
   });
   it('exempt excluded', () => {
     const r = calculateAssessmentResult([makeGrade(14,'graded'), makeGrade(null,'exempt'), makeGrade(12,'graded')], 'simple_average', 20);
@@ -201,8 +205,11 @@ describe('Grade Status (§14)', () => {
     const r = calculateAssessmentResult([makeGrade(14,'graded'), makeGrade(null,'pending')], 'simple_average', 20);
     expect(r.result).toBe('14'); expect(r.isIncomplete).toBe(true);
   });
-  it('all-absent → null', () => {
-    expect(calculateAssessmentResult([makeGrade(null,'absent_excused'), makeGrade(null,'absent_unexcused')], 'simple_average', 20).result).toBeNull();
+  it('all-absent: AJ excluded, AI penalizing zero → 0 (WS-003 §7)', () => {
+    // WS-003 Contract: AI is penalizing zero, not excluded.
+    // AJ is still neutral. So AI contributes 0 → result = '0'.
+    const r = calculateAssessmentResult([makeGrade(null,'absent_excused'), makeGrade(null,'absent_unexcused')], 'simple_average', 20);
+    expect(r.result).toBe('0'); expect(r.contributingCount).toBe(1); expect(r.excludedCount).toBe(1);
   });
   it('empty → null', () => {
     expect(calculateAssessmentResult([], 'simple_average', 20).result).toBeNull();
@@ -397,7 +404,8 @@ describe('Status constants', () => {
   it('all mapped', () => {
     expect(GRADE_STATUS_BEHAVIOR.graded).toBe('CONTRIBUTES');
     expect(GRADE_STATUS_BEHAVIOR.absent_excused).toBe('EXCLUDED');
-    expect(GRADE_STATUS_BEHAVIOR.absent_unexcused).toBe('EXCLUDED');
+    // WS-003 Contract §7: AI changed from EXCLUDED to PENALIZING_ZERO
+    expect(GRADE_STATUS_BEHAVIOR.absent_unexcused).toBe('PENALIZING_ZERO');
     expect(GRADE_STATUS_BEHAVIOR.exempt).toBe('EXCLUDED');
     expect(GRADE_STATUS_BEHAVIOR.not_evaluated).toBe('EXCLUDED');
     expect(GRADE_STATUS_BEHAVIOR.pending).toBe('INCOMPLETE');
