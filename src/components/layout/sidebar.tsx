@@ -33,6 +33,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { isNavItemActive } from '@/lib/navigation';
 import { useNavigation } from '@/components/providers/navigation-provider';
 
 // Map nom d'icône → composant Lucide
@@ -126,8 +127,12 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
 
       {/* Navigation — filtrée par RBAC */}
       <nav className="flex-1 overflow-y-auto px-3 pb-4 custom-scrollbar">
-        {navSections.map((section, sectionIndex) => (
-          <div key={sectionIndex} className={sectionIndex > 0 ? 'mt-4' : ''}>
+        {(() => {
+          // Collect all nav hrefs for specificity-aware active-state matching
+          const allHrefs = navSections.flatMap(s => s.items.map(i => i.href));
+
+          return navSections.map((section, sectionIndex) => (
+            <div key={sectionIndex} className={sectionIndex > 0 ? 'mt-4' : ''}>
             {section.title && !collapsed && (
               <h3 className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-sidebar-text/60">
                 {section.title}
@@ -138,7 +143,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
             )}
             <ul className="space-y-0.5">
               {section.items.map((item) => {
-                const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+                const isActive = isNavItemActive(pathname, item.href, allHrefs);
                 const Icon = getIcon(item.icon);
                 return (
                   <li key={item.href}>
@@ -160,8 +165,9 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
                 );
               })}
             </ul>
-          </div>
-        ))}
+            </div>
+          ));
+        })()}
       </nav>
 
       {/* Bottom user section — dynamique selon le rôle */}
