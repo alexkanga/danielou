@@ -23,28 +23,14 @@ by another AI agent or human developer.
 
 ## WS-002 — COMPOSITION & ANNUAL RESULTS
 
-**STATUS**: ACTIVE — CONTRACT APPROVED
+**STATUS**: CLOSED
 
 **CONTRACT**: docs/planning/WS-002_COMPOSITION_ANNUAL_RESULTS_CONTRACT.md
-
-**POSITION**: NEXT FUNCTIONAL WORKSTREAM
 
 **OBJECTIVE**
 
 Implement/complete Composition, Passage and annual results behavior from
 the CURRENT canonical repository using OWNER-approved business rules.
-
-**DEPENDENCIES**
-
-WS-001 CLOSED.
-
-NO dependency on:
-
-- V1→V2 role migration
-- architecture hardening
-- generic testing expansion
-- lint cleanup
-- historical Composition recovery
 
 **MODULES**
 
@@ -53,42 +39,54 @@ NO dependency on:
 | WS-002-M1 | Composition Calculation Core | CLOSED |
 | WS-002-M2 | Composition Data Service | CLOSED |
 | WS-002-M3 | Composition Workspace | CLOSED |
-| WS-002-M4 | Annual Results & Decision | READY / NEXT |
-
-**OUT OF SCOPE**
-
-- old lost Composition implementation
-- historical reconstruction
-- unrelated refactoring
-- unapproved architecture changes
-
-**DEFINITION OF DONE**
-
-Defined in the approved WS-002 contract.
+| WS-002-M4 | Annual Results & Decision | CLOSED |
 
 ---
 
-## WS-003 — DEFERRED PRODUCT / TECHNICAL BACKLOG
+## WS-003 — RÉSULTATS PAR PÉRIODE
 
-**STATUS**: NON-BLOCKING
+**STATUS**: P0 CLOSED / PASS / CANONICAL / PRODUCTION VERIFIED
 
-**PURPOSE**
+**CONTRACT**: docs/planning/WS-003_PERIOD_RESULTS_CONTRACT.md
 
-Store genuine non-blocking observations from the canonical baseline.
+**CONTRACT STATUS**: FROZEN
 
-Concise entries:
+**OBJECTIVE**
 
-- school_membership V2 session loading completion;
-- real XLSX export implementation;
-- statistics depth verification;
-- recovery tooling verification;
-- Edge Runtime crypto warning;
-- deprecated middleware convention;
-- existing non-blocking lint warnings.
+Period-scoped student results: general averages, ranks, status display,
+read-only via /dashboard/resultats with Year→Class→Period selection.
+
+**PHASES**
+
+| Phase | Scope | Status |
+|-------|-------|--------|
+| P0 | Period results read flow | CLOSED / PASS / PRODUCTION VERIFIED |
+| P1 | Future enhancement | NOT STARTED |
+| P2 | Future enhancement | NOT STARTED |
+| M5 | Report cards | NOT STARTED |
+
+**PR #7**: MERGED (SHA 569b0ad3b9786c3362b80920eb1102ce3685a8c9)
+
+**GHOST EDGE FIX**: CANONICAL — Edge-compatible session comparison in src/lib/ghost-auth.ts
 
 **IMPORTANT**
 
-WS-003 IS NOT AN EXECUTION PLAN.
+P0 completion does NOT authorize P1, P2, or M5.
+Each requires explicit OWNER GO.
+
+---
+
+## Technical Backlog
+
+**STATUS**: NON-BLOCKING
+
+Non-blocking observations from the canonical baseline:
+
+- school_membership V2 session loading completion
+- real XLSX export implementation
+- statistics depth verification
+- recovery tooling verification
+- existing non-blocking lint warnings
 
 A backlog item becomes authorized work only when:
 
