@@ -83,9 +83,8 @@ When factual behavior conflicts with OWNER-approved intended behavior:
 
 ## 5. ROUTE
 
-Classify the requested work using the S0 Task Router (§2):
-
-`NEW_PROJECT | MODULE | HOTFIX | RECOVERY | CONTRACT_DIVERGENCE | INVESTIGATION | MIGRATION | DOCUMENTATION`
+Classify the requested work using S2 — AISE Task Router
+(`docs/engineering/AISE_TASK_ROUTER.md`).
 
 If **CONTRACT_DIVERGENCE**: classification MUST occur before corrective routing.
 

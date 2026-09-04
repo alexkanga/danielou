@@ -4,10 +4,33 @@ AI SOFTWARE ENGINEERING OS
 Version: 0.1 PILOT
 Status: ACTIVE PILOT
 Pilot Project: Daniélou
-Frozen Rules: §24 CONTRACT PRESERVATION
+Frozen Rules: §24 CONTRACT PRESERVATION · §25 EXTERNAL PARAMETER GATE
 
 Operational implementation:
   S1 — AISE Universal Launcher → docs/engineering/AISE_UNIVERSAL_LAUNCHER.md
+  S2 — AISE Task Router → docs/engineering/AISE_TASK_ROUTER.md
+  S3 — AISE New Project Bootstrap → docs/engineering/AISE_NEW_PROJECT_BOOTSTRAP.md
+  S4 — AISE Project Discovery / Charter → docs/engineering/AISE_PROJECT_DISCOVERY_CHARTER.md
+  S5 — AISE Product Requirements → docs/engineering/AISE_PRODUCT_REQUIREMENTS.md
+  S6 — AISE Technical Specification → docs/engineering/AISE_TECHNICAL_SPECIFICATION.md
+  S7 — AISE Project Manifest + ADR → docs/engineering/AISE_PROJECT_MANIFEST_ADR.md
+  S8 — AISE Roadmap / Milestone Design → docs/engineering/AISE_ROADMAP_MILESTONE_DESIGN.md
+  S9 — AISE Module Contract / Work Package → docs/engineering/AISE_MODULE_CONTRACT_WORK_PACKAGE.md
+  S10 — AISE Implementation Execution → docs/engineering/AISE_IMPLEMENTATION_EXECUTION.md
+  S11 — AISE Verification & Acceptance → docs/engineering/AISE_VERIFICATION_ACCEPTANCE.md
+  S12 — AISE Release Readiness / Preproduction → docs/engineering/AISE_RELEASE_READINESS_PREPRODUCTION.md
+  S13 — AISE Production Deployment & Verification → docs/engineering/AISE_PRODUCTION_DEPLOYMENT_VERIFICATION.md
+  S14 — AISE Operational Handover / Baseline Closure → docs/engineering/AISE_OPERATIONAL_HANDOVER_BASELINE_CLOSURE.md
+  R1 — AISE Module / Change Protocol → docs/engineering/AISE_MODULE_CHANGE_PROTOCOL.md
+  R2 — AISE Hotfix Protocol → docs/engineering/AISE_HOTFIX_PROTOCOL.md
+  R3 — AISE Recovery Protocol → docs/engineering/AISE_RECOVERY_PROTOCOL.md
+  R4 — AISE Investigation Protocol → docs/engineering/AISE_INVESTIGATION_PROTOCOL.md
+  R5 — AISE Contract Divergence Protocol → docs/engineering/AISE_CONTRACT_DIVERGENCE_PROTOCOL.md
+  R6 — AISE Governance Change Protocol → docs/engineering/AISE_GOVERNANCE_CHANGE_PROTOCOL.md
+  R7 — AISE Brownfield Adoption Protocol → docs/engineering/AISE_BROWNFIELD_ADOPTION_PROTOCOL.md
+
+Canonical component topology and lifecycle:
+  AISE_ROADMAP → docs/engineering/AISE_ROADMAP.md
 
 ======================================================================
 0. PURPOSE
@@ -1163,6 +1186,60 @@ Compact form for session context:
   REQUIRED:   Classify divergence → confirm implementation
               defect → fix query scoping → run original
               fixture again.
+
+======================================================================
+
+======================================================================
+25. FROZEN EXTERNAL PARAMETER GATE
+======================================================================
+
+FROZEN — OWNER-approved universal invariant.
+
+DO NOT REQUEST EXTERNAL PARAMETERS PREEMPTIVELY.
+
+Proceed autonomously until the currently authorized unit reaches an
+operation that genuinely requires an external parameter, credential,
+external identifier, connection setting, or authenticated capability.
+
+At that exact boundary:
+
+1. inspect whether the required parameter/capability already exists;
+2. verify whether it is appropriate for the intended target;
+3. if valid, continue;
+4. if unavailable, STOP only at that external boundary;
+5. report exactly what is required, why, where, with what scope;
+6. preserve all completed work;
+7. record the exact RESUME POINT;
+8. after configuration, verify availability and target;
+9. resume from that exact point;
+10. do NOT repeat completed work unnecessarily.
+
+Missing external parameter ≠ implementation defect.
+
+Classify as: EXTERNAL PARAMETER BLOCKER.
+
+Three parameter categories:
+
+  A. PROJECT PARAMETER
+     (business configuration: school name, academic year, thresholds)
+
+  B. EXTERNAL NON-SECRET PARAMETER
+     (repository URL, project identifier, API base URL)
+
+  C. EXTERNAL SECRET / CREDENTIAL
+     (GitHub PAT, DATABASE_URL, API key, OAuth secret, private key)
+
+CREDENTIAL AVAILABLE ≠ TARGET VERIFIED.
+
+Before any external write operation:
+  TARGET NOT VERIFIED → NO WRITE.
+
+Do NOT store, echo, or expose secret values in source code,
+repository files, commits, PRs, documentation, logs, or shell history.
+
+Request only MINIMUM REQUIRED EXTERNAL PRIVILEGE.
+
+S10 defines the operational implementation of this invariant.
 
 ======================================================================
 END AI SOFTWARE ENGINEERING OS 0.1 PILOT
