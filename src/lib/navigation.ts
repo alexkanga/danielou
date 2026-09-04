@@ -360,6 +360,42 @@ export const BREADCRUMB_MAP: Array<{
 ];
 
 // ─────────────────────────────────────────────
+// Active-state helpers
+// ─────────────────────────────────────────────
+
+/**
+ * Determine whether a navigation item is active for the given pathname.
+ *
+ * Uses specificity-aware matching:
+ * - Exact match → always active
+ * - Prefix match → active only if no other nav item is a more specific
+ *   match for the current pathname. This prevents sibling leaf items
+ *   that share a route prefix (e.g. /dashboard/resultats and
+ *   /dashboard/resultats/annuelles) from both appearing active.
+ */
+export function isNavItemActive(
+  pathname: string,
+  itemHref: string,
+  allNavHrefs: string[],
+): boolean {
+  // Exact match always wins
+  if (pathname === itemHref) return true;
+
+  // Prefix match: only if no other nav item is a more specific match
+  if (pathname.startsWith(itemHref + '/')) {
+    const hasMoreSpecificMatch = allNavHrefs.some(
+      otherHref =>
+        otherHref !== itemHref
+        && otherHref.length > itemHref.length
+        && (pathname === otherHref || pathname.startsWith(otherHref + '/')),
+    );
+    return !hasMoreSpecificMatch;
+  }
+
+  return false;
+}
+
+// ─────────────────────────────────────────────
 // Helpers de filtrage
 // ─────────────────────────────────────────────
 
