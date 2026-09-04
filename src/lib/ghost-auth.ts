@@ -21,7 +21,8 @@
  */
 
 import { SignJWT, jwtVerify } from 'jose';
-import { timingSafeEqual } from 'crypto';
+// timingSafeEqual removed — Edge Runtime incompatible.
+// safeEquals() now uses TextEncoder + XOR constant-time comparison (Web Standard).
 import { getGhostConfig } from './ghost-config';
 
 // ─────────────────────────────────────────────
@@ -69,10 +70,15 @@ function normalizeIdentifier(input: string): string {
  * Si les longueurs diffèrent, retourne false sans révéler la longueur attendue.
  */
 function safeEquals(a: string, b: string): boolean {
-  const bufA = Buffer.from(a, 'utf-8');
-  const bufB = Buffer.from(b, 'utf-8');
+  const encoder = new TextEncoder();
+  const bufA = encoder.encode(a);
+  const bufB = encoder.encode(b);
   if (bufA.length !== bufB.length) return false;
-  return timingSafeEqual(bufA, bufB);
+  let cmp = 0;
+  for (let i = 0; i < bufA.length; i++) {
+    cmp |= bufA[i] ^ bufB[i];
+  }
+  return cmp === 0;
 }
 
 /**
